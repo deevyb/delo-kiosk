@@ -230,36 +230,45 @@ Using Framer Motion throughout for consistency:
 ## Environment Variables
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+# Supabase (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://wryykcdqojftbqgtxpgu.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 
-# Admin
-ADMIN_PASSCODE=
+# Admin (Required)
+ADMIN_PASSCODE=<your-passcode>
 
 # Optional
-NEXT_PUBLIC_APP_URL=
+SUPABASE_SERVICE_ROLE_KEY=<for-server-side-operations>
+NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 ```
+
+**Note:** Actual keys are stored in Vercel environment variables and local `.env` file (not committed to git).
 
 ---
 
 ## Deployment
 
-### Vercel Setup
-1. Connect GitHub repository
-2. Set environment variables
-3. Deploy (automatic on push to main)
+### Current Production
+- **Vercel:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
+- **GitHub:** https://github.com/deevyb/delo-kiosk
+- **Supabase:** Project `wryykcdqojftbqgtxpgu` (us-west-2)
 
-### Supabase Setup
-1. Create project
-2. Run migrations
-3. Enable Realtime on `orders` table
-4. Copy connection credentials to Vercel
+### Vercel Setup ✅ Complete
+1. ~~Connect GitHub repository~~ — Connected to `deevyb/delo-kiosk`
+2. ~~Set environment variables~~ — SUPABASE_URL, ANON_KEY, ADMIN_PASSCODE
+3. ~~Deploy~~ — Auto-deploys on push to main
+
+### Supabase Setup ✅ Complete
+1. ~~Create project~~ — `delo-kiosk` in us-west-2
+2. ~~Run migrations~~ — 4 migrations applied (tables + realtime)
+3. ~~Enable Realtime on `orders` table~~ — Enabled via migration
+4. ~~Copy connection credentials to Vercel~~ — Done
 
 ### Pre-Launch Checklist
-- [ ] All env vars set in Vercel
-- [ ] Supabase Realtime enabled
+- [x] All env vars set in Vercel
+- [x] Supabase Realtime enabled
+- [x] Menu items seeded (7 drinks)
+- [x] Modifiers seeded (Regular/Oat milk, Hot/Iced)
 - [ ] Test order on production
 - [ ] Test kitchen display updates
 - [ ] Test admin access
@@ -288,4 +297,4 @@ NEXT_PUBLIC_APP_URL=
 
 ---
 
-*Last updated: Project initialization*
+*Last updated: December 31, 2024 — Infrastructure complete, screens pending*

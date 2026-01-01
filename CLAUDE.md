@@ -164,10 +164,30 @@ The owner will know this project succeeded when:
 
 ---
 
+## Current Status
+
+**Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
+
+| Route | Status | Description |
+|-------|--------|-------------|
+| `/` | ✅ Deployed | Landing page with navigation |
+| `/order` | 🚧 Placeholder | Customer ordering screen (to build) |
+| `/kitchen` | 🚧 Placeholder | Kitchen display (to build) |
+| `/admin` | 🚧 Placeholder | Admin panel (to build) |
+
+**Infrastructure:**
+- GitHub: [deevyb/delo-kiosk](https://github.com/deevyb/delo-kiosk)
+- Vercel: Auto-deploys on push to main
+- Supabase: Database ready with menu seeded
+
+---
+
 ## Reference Documents
 
 - `Delo Coffee Ordering App – MVP Spec.md` — detailed functional requirements
 - `Delo Coffee Brand Identity.md` — brand story, colors, typography, voice
+- `TECHNICAL.md` — architecture, schema, deployment details
+- `README.md` — project overview for GitHub
 
 ---
 
