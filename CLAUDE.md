@@ -13,6 +13,35 @@
 
 ---
 
+## Context Preservation (Important!)
+
+This project uses documentation as persistent memory across Claude Code sessions. Auto-compaction and session breaks can lose context, so **these docs are the source of truth**.
+
+### At Session Start
+1. Read this entire file (CLAUDE.md)
+2. Check the **Current Status** section (bottom of this file) for what's done and what's next
+3. If needed, read TECHNICAL.md for implementation details
+
+### At Meaningful Milestones — Update Docs Before Stopping
+**What counts as a milestone:**
+- Completing a major feature or screen
+- Finishing setup/infrastructure work
+- Making significant architectural decisions
+- Any stopping point where context would be lost
+
+**What to update:**
+1. **CLAUDE.md → Current Status section** — Update route statuses, what's done, what's next
+2. **TECHNICAL.md** — If any technical details changed (schema, deployment, etc.)
+3. **Commit and push** — So updates survive and are visible on GitHub
+
+### Quick Status Update Template
+When updating the Current Status section, include:
+- Which routes/features are complete vs. in-progress vs. pending
+- Any blockers or decisions that need user input
+- What the next session should pick up on
+
+---
+
 ## The Business
 
 **Delo Coffee** runs pop-up coffee events 1-2 times per month, serving 100-150 customers per event. Currently using paper order cards where customers circle their choices — it works, but cards get lost or shuffled during busy periods.
@@ -166,19 +195,25 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
+> **Last Updated:** December 31, 2024
+>
+> **Next Up:** Build the customer ordering screen (`/order`)
+
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 | Route | Status | Description |
 |-------|--------|-------------|
 | `/` | ✅ Deployed | Landing page with navigation |
-| `/order` | 🚧 Placeholder | Customer ordering screen (to build) |
-| `/kitchen` | 🚧 Placeholder | Kitchen display (to build) |
-| `/admin` | 🚧 Placeholder | Admin panel (to build) |
+| `/order` | 🚧 Placeholder | Customer ordering screen — **next to build** |
+| `/kitchen` | 🚧 Placeholder | Kitchen display (after /order) |
+| `/admin` | 🚧 Placeholder | Admin panel (after /kitchen) |
 
-**Infrastructure:**
+**Infrastructure:** All complete
 - GitHub: [deevyb/delo-kiosk](https://github.com/deevyb/delo-kiosk)
 - Vercel: Auto-deploys on push to main
-- Supabase: Database ready with menu seeded
+- Supabase: Database ready, menu seeded (7 drinks), realtime enabled
+
+**Blockers:** None
 
 ---
 
