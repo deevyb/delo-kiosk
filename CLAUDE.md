@@ -216,18 +216,18 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** December 31, 2024
+> **Last Updated:** January 1, 2025
 >
-> **Next Up:** Build the customer ordering screen (`/order`)
+> **Next Up:** Convert DrinkCustomizer from full-page to floating modal (Phase 3 continuation)
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
-| Route      | Status         | Description                                  |
-| ---------- | -------------- | -------------------------------------------- |
-| `/`        | ✅ Deployed    | Landing page with navigation                 |
-| `/order`   | 🚧 Placeholder | Customer ordering screen — **next to build** |
-| `/kitchen` | 🚧 Placeholder | Kitchen display (after /order)               |
-| `/admin`   | 🚧 Placeholder | Admin panel (after /kitchen)                 |
+| Route      | Status         | Description                                    |
+| ---------- | -------------- | ---------------------------------------------- |
+| `/`        | ✅ Deployed    | Landing page with navigation                   |
+| `/order`   | 🚧 In Progress | Menu grid done, customization modal next       |
+| `/kitchen` | 🚧 Placeholder | Kitchen display (after /order complete)        |
+| `/admin`   | 🚧 Placeholder | Admin panel (after /kitchen)                   |
 
 **Infrastructure:** All complete
 
@@ -235,6 +235,63 @@ The owner will know this project succeeded when:
 - Vercel: Auto-deploys on push to main
 - Supabase: Database ready, menu seeded (7 drinks), realtime enabled
 - Code Quality: Prettier formatting, ESLint, Error Boundary for crash prevention
+
+---
+
+## /order Build Progress (7 Phases)
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1. Menu Grid | ✅ Done | Drink cards in 3-column grid, fetches from Supabase |
+| 2. Animations | ✅ Done | Entrance animations, press-in effect, selection state |
+| 3. Customization | 🚧 In Progress | **NEXT: Convert to floating modal (like Square)** |
+| 4. Name Input | ⏳ Pending | Customer name field |
+| 5. Submit Order | ⏳ Pending | API route, database write |
+| 6. Confirmation | ⏳ Pending | Success screen with order summary |
+| 7. Auto-Reset | ⏳ Pending | 3-second reset, error handling |
+
+**Detailed plan:** See `/Users/deevyb/.claude/plans/goofy-meandering-peach.md`
+
+---
+
+## Key Design Decisions Made
+
+### Animation Style (Reference: Superpower.com, Netflix iOS, landonorris.com)
+
+**Entrance Animation (Option B - Coordinated Fade-Slide):**
+- Custom easing curve: `[0.65, 0.05, 0, 1]` (smooth deceleration)
+- Cards slide up 40px while fading in
+- 70ms stagger between cards
+- Duration: 0.5s
+
+**Press Effect (Option B - Press-In):**
+- Scale to 0.97
+- Move down 2px (pressing "into" screen)
+- Shadow reduces on press
+- Spring physics: stiffness 400, damping 30 (minimal bounce)
+
+**Customization Screen (Changed from full-page to modal):**
+- **Layout:** Floating modal panel over dimmed menu grid (like Square)
+- **Transition:** Netflix/iOS folder style - card expands into modal using `layoutId`
+- **Close:** Both X button in corner AND backdrop tap to close
+
+### Files with Important Comments
+
+- `components/DrinkCard.tsx` - Contains detailed ANIMATION CONFIGURATION guide and SPRING PHYSICS GUIDE explaining how to tweak animation values
+
+---
+
+## What To Do Next Session
+
+1. Read this file and the plan file at `/Users/deevyb/.claude/plans/goofy-meandering-peach.md`
+2. **Continue Phase 3:** Convert `DrinkCustomizer.tsx` from full-page to floating modal
+   - Add dimmed backdrop overlay
+   - Change from full-screen to centered modal card
+   - Add X close button
+   - Keep the Netflix-style `layoutId` transition for drink name
+   - Menu grid should stay visible but dimmed behind modal
+3. Test the modal interaction
+4. Then continue to Phase 4 (Name Input)
 
 **Blockers:** None
 
