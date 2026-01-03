@@ -254,12 +254,12 @@ The owner will know this project succeeded when:
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
-| Route      | Status         | Description                                        |
-| ---------- | -------------- | -------------------------------------------------- |
-| `/`        | ✅ Deployed    | Landing page with navigation                       |
-| `/order`   | ✅ Complete    | Full ordering flow with confirmation & auto-reset  |
-| `/kitchen` | ✅ Complete    | Real-time kitchen display with tabs (Placed/Ready) |
-| `/admin`   | 🚧 Placeholder | Admin panel (next up)                              |
+| Route      | Status         | Description                                                     |
+| ---------- | -------------- | --------------------------------------------------------------- |
+| `/`        | ✅ Deployed    | Landing page with navigation                                    |
+| `/order`   | ✅ Complete    | Full ordering flow with confirmation & auto-reset               |
+| `/kitchen` | ✅ Complete    | Real-time barista display with 2-col grid, optimized typography |
+| `/admin`   | 🚧 Placeholder | Admin panel (next up)                                           |
 
 **Infrastructure:** All complete
 
@@ -290,12 +290,12 @@ The owner will know this project succeeded when:
 | ----------------- | ------- | -------------------------------------------------------------- |
 | 1. API Endpoint   | ✅ Done | PATCH `/api/orders/[id]` for status updates (ready/canceled)   |
 | 2. Basic Layout   | ✅ Done | Server component fetches orders, client displays with counters |
-| 3. Order Cards    | ✅ Done | Name, drink, modifiers, time badge, Mark Ready/Cancel buttons  |
+| 3. Order Cards    | ✅ Done | Drink→Modifiers→Name hierarchy, time badge, actions            |
 | 4. Tabs UI        | ✅ Done | Animated tab switcher (Placed/Ready) with live counts          |
 | 5. Realtime       | ✅ Done | Supabase subscription for instant order updates                |
 | 6. Animations     | ✅ Done | Card enter/exit, tab switch, press effects (spring 400/30)     |
 | 7. Error Handling | ✅ Done | Offline banner, cancel confirmation modal, API error display   |
-| 8. Testing & Docs | ✅ Done | Build verified, documentation updated                          |
+| 8. UI Polish      | ✅ Done | 2-col grid, barista-optimized typography (drink first)         |
 
 ---
 

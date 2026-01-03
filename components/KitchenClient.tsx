@@ -165,7 +165,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       {/* Header */}
       <header className="px-8 pt-8 pb-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <h1 className="font-yatra text-4xl text-delo-maroon">Kitchen Display</h1>
+          <h1 className="font-yatra text-4xl text-delo-maroon">Delo Barista Bar</h1>
           <div className="font-roboto-mono text-sm text-delo-navy/60">
             Placed: {placedCount} | Ready: {readyCount}
           </div>
@@ -207,7 +207,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
             </p>
           </div>
         ) : (
-          <motion.div className="space-y-4" layout>
+          <motion.div className="grid grid-cols-2 gap-4" layout>
             <AnimatePresence mode="popLayout">
               {currentOrders.map((order) => (
                 <OrderCard

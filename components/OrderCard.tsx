@@ -62,19 +62,21 @@ export default function OrderCard({
       transition={{ type: 'spring', ...springConfig }}
       className="bg-white rounded-xl p-6 shadow-sm border border-delo-navy/5"
     >
-      {/* Top row: Name and time */}
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="font-bricolage font-bold text-2xl text-delo-navy">{order.customer_name}</h3>
-        <span className="font-roboto-mono text-sm text-delo-navy/50 bg-delo-navy/5 px-2 py-1 rounded">
+      {/* Top row: Drink name and time */}
+      <div className="flex items-start justify-between mb-1">
+        <h3 className="font-bricolage font-bold text-2xl text-delo-navy">{order.item}</h3>
+        <span className="font-roboto-mono text-sm text-delo-navy/50 bg-delo-navy/5 px-2 py-1 rounded flex-shrink-0 ml-2">
           {timeAgo}
         </span>
       </div>
 
-      {/* Drink name */}
-      <p className="font-bricolage font-semibold text-lg text-delo-navy/80">{order.item}</p>
-
       {/* Modifiers */}
-      {modifiersText && <p className="font-manrope text-delo-navy/60 mt-1">{modifiersText}</p>}
+      {modifiersText && (
+        <p className="font-manrope font-semibold text-lg text-delo-navy/70 mb-2">{modifiersText}</p>
+      )}
+
+      {/* Customer name */}
+      <p className="font-manrope font-medium text-base text-delo-navy/50">{order.customer_name}</p>
 
       {/* Actions (only for placed orders) */}
       {isPlaced && (
