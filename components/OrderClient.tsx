@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { useState, useMemo, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { MenuItem, Modifier, Order } from '@/lib/supabase'
 import DrinkCard from './DrinkCard'
 import DrinkCustomizer from './DrinkCustomizer'
@@ -39,6 +39,27 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
   const [customerName, setCustomerName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submittedOrder, setSubmittedOrder] = useState<Order | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  /**
+   * Auto-reset after confirmation screen
+   * Returns to menu after 3 seconds so the next customer can order
+   */
+  useEffect(() => {
+    if (screen !== 'confirmed') return
+
+    const timer = setTimeout(() => {
+      // Reset all state for next customer
+      setScreen('menu')
+      setSelectedDrink(null)
+      setSelectedModifiers({})
+      setCustomerName('')
+      setSubmittedOrder(null)
+    }, 3000)
+
+    // Cleanup on unmount or if screen changes
+    return () => clearTimeout(timer)
+  }, [screen])
 
   /**
    * When a drink is tapped, select it and initialize modifiers with defaults
@@ -83,6 +104,7 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
     if (!selectedDrink || !customerName.trim() || isSubmitting) return
 
     setIsSubmitting(true)
+    setError(null) // Clear any previous error
 
     try {
       const response = await fetch('/api/orders', {
@@ -102,9 +124,9 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
       const order: Order = await response.json()
       setSubmittedOrder(order)
       setScreen('confirmed')
-    } catch (error) {
-      console.error('Order submission failed:', error)
-      // For now, just log the error - Phase 7 will add proper error handling
+    } catch (err) {
+      console.error('Order submission failed:', err)
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -116,6 +138,7 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
   const handleCloseModal = () => {
     setScreen('menu')
     setCustomerName('') // Reset name for next order
+    setError(null) // Clear any error
     // Keep the drink selected briefly for visual continuity during close animation
     setTimeout(() => setSelectedDrink(null), 300)
   }
@@ -194,11 +217,71 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
             onSubmit={handleSubmit}
             onClose={handleCloseModal}
             isSubmitting={isSubmitting}
+            error={error}
           />
         )}
       </AnimatePresence>
 
-      {/* Phase 6 will add the confirmation screen here */}
+      {/* Confirmation screen - shows after successful order submission */}
+      <AnimatePresence>
+        {screen === 'confirmed' && submittedOrder && (
+          <motion.div
+            className="fixed inset-0 bg-delo-cream flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="text-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            >
+              {/* Checkmark icon */}
+              <div className="w-16 h-16 rounded-full bg-delo-maroon/10 flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-delo-maroon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+
+              <p className="text-description text-delo-navy/60 mb-6">
+                On it!
+              </p>
+
+              <h1 className="font-bricolage font-bold text-4xl text-delo-navy mb-4">
+                {submittedOrder.customer_name}
+              </h1>
+
+              <p className="font-bricolage font-semibold text-2xl text-delo-navy">
+                {submittedOrder.item}
+              </p>
+
+              {/* Modifiers line - only show if there are modifiers */}
+              {(submittedOrder.modifiers?.milk ||
+                submittedOrder.modifiers?.temperature) && (
+                <p className="text-modifier-option text-delo-navy/80 mt-2">
+                  {[
+                    submittedOrder.modifiers?.milk,
+                    submittedOrder.modifiers?.temperature,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

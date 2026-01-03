@@ -14,6 +14,7 @@ interface DrinkCustomizerProps {
   onSubmit: () => void
   onClose: () => void
   isSubmitting: boolean
+  error: string | null
 }
 
 /**
@@ -35,6 +36,7 @@ export default function DrinkCustomizer({
   onSubmit,
   onClose,
   isSubmitting,
+  error,
 }: DrinkCustomizerProps) {
   const milkOptions = modifiers.filter((m) => m.category === 'milk')
   const temperatureOptions = modifiers.filter((m) => m.category === 'temperature')
@@ -139,6 +141,11 @@ export default function DrinkCustomizer({
           >
             {isSubmitting ? 'Sending...' : 'Submit'}
           </motion.button>
+
+          {/* Error message */}
+          {error && (
+            <p className="text-red-600 text-sm mt-3 text-center">{error}</p>
+          )}
         </div>
       </motion.div>
     </>

@@ -246,15 +246,15 @@ The owner will know this project succeeded when:
 
 > **Last Updated:** January 3, 2025
 >
-> **Next Up:** Phase 6 - Confirmation screen
+> **Next Up:** `/kitchen` route — Kitchen display
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 | Route      | Status         | Description                                    |
 | ---------- | -------------- | ---------------------------------------------- |
 | `/`        | ✅ Deployed    | Landing page with navigation                   |
-| `/order`   | 🚧 In Progress | Menu grid, customization modal, order submission working |
-| `/kitchen` | 🚧 Placeholder | Kitchen display (after /order complete)        |
+| `/order`   | ✅ Complete    | Full ordering flow with confirmation & auto-reset |
+| `/kitchen` | 🚧 Placeholder | Kitchen display (next up)                      |
 | `/admin`   | 🚧 Placeholder | Admin panel (after /kitchen)                   |
 
 **Infrastructure:** All complete
@@ -275,8 +275,8 @@ The owner will know this project succeeded when:
 | 3. Customization | ✅ Done | Floating modal, soft dim backdrop, X button, click-outside-to-close |
 | 4. Name Input | ✅ Done | Customer name field in modal, required for submit |
 | 5. Submit Order | ✅ Done | API route `/api/orders`, loading state, saves to database |
-| 6. Confirmation | ⏳ Pending | Success screen with order summary |
-| 7. Auto-Reset | ⏳ Pending | 3-second reset, error handling |
+| 6. Confirmation | ✅ Done | Success screen with checkmark, "On it!", name, drink, modifiers |
+| 7. Auto-Reset | ✅ Done | 3-second auto-reset, inline error handling in modal |
 
 ---
 
@@ -338,11 +338,13 @@ To prevent styling inconsistencies, common patterns are defined once:
 ## What To Do Next Session
 
 1. Read this file (CLAUDE.md)
-2. **Start Phase 6:** Confirmation screen
-   - Show success screen after order submits (screen state is already `'confirmed'`)
-   - Display order summary: "Sarah: Elaichi Latte, Oat Milk, Iced"
-   - Use `submittedOrder` state (already populated from API response)
-3. Then continue to Phase 7 (Auto-reset after 3 seconds)
+2. **Build `/kitchen` route** — Kitchen display for barista
+   - Real-time order feed (Supabase realtime subscription)
+   - Show orders with status `placed`, oldest first
+   - Each card: customer name, drink, modifiers, time since ordered
+   - Tap to mark as "Ready" or "Cancel"
+   - Counters: "Placed: X | Ready: Y"
+3. Reference the spec in `Delo Coffee Ordering App – MVP Spec.md` for full requirements
 
 **Blockers:** None
 
