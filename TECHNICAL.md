@@ -81,6 +81,7 @@
 CREATE TABLE menu_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
+  description TEXT,
   image_url TEXT,
   is_active BOOLEAN DEFAULT true,
   display_order INTEGER DEFAULT 0,
@@ -322,4 +323,4 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 ---
 
-_Last updated: December 31, 2024 — Infrastructure complete, screens pending_
+_Last updated: January 2, 2025 — Phase 3 complete, added description column_
