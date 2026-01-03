@@ -202,6 +202,32 @@ Delo Coffee is inspired by the _delo_ — a traditional Indian courtyard where s
 
 ---
 
+## Using Specialized Plugins
+
+Two plugins are installed that can help with certain tasks. **Proactively suggest these when they'd add value, and explain why.**
+
+### `/frontend-design`
+**What it does:** Generates polished, creative UI components with high design quality.
+
+**When to suggest it:**
+- Building a new screen or component from scratch where visual creativity matters
+- When the owner wants to see multiple design directions
+- For UI that needs extra polish beyond the established patterns
+
+**When NOT to use it:** For incremental changes to existing components, or when following established design patterns.
+
+### `/feature-dev`
+**What it does:** Deep codebase analysis before implementation — maps architecture, traces dependencies, plans multi-file changes.
+
+**When to suggest it:**
+- Starting a major new route (`/kitchen`, `/admin`)
+- Features that touch many files or require understanding the whole system
+- Complex features where architectural planning prevents mistakes
+
+**When NOT to use it:** For focused, single-component work or when the scope is already clear.
+
+---
+
 ## Success Criteria
 
 The owner will know this project succeeded when:
