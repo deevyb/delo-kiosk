@@ -216,7 +216,7 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** January 2, 2025
+> **Last Updated:** January 2, 2025 (evening)
 >
 > **Next Up:** Phase 4 - Add customer name input to customization modal
 
@@ -244,7 +244,7 @@ The owner will know this project succeeded when:
 |-------|--------|-------------|
 | 1. Menu Grid | ✅ Done | Drink cards in 3-column grid, fetches from Supabase |
 | 2. Animations | ✅ Done | Entrance animations, press-in effect, selection state |
-| 3. Customization | ✅ Done | Floating modal with blur backdrop, X button, Square-style slide-up |
+| 3. Customization | ✅ Done | Floating modal, blur backdrop, X button, click-outside-to-close, drink descriptions |
 | 4. Name Input | ⏳ Pending | Customer name field |
 | 5. Submit Order | ⏳ Pending | API route, database write |
 | 6. Confirmation | ⏳ Pending | Success screen with order summary |
@@ -273,6 +273,10 @@ The owner will know this project succeeded when:
 - **Transition:** Slide-up + fade-in with blur backdrop (Square approach, not Netflix layoutId)
 - **Close:** Both X button in corner AND backdrop tap to close
 - **Animation:** Spring physics (stiffness 400, damping 30) for snappy, minimal-bounce feel
+- **Descriptions:** Each drink shows its description below the name (stored in DB)
+
+**Database Schema Update:**
+- Added `description` column to `menu_items` table (text, nullable)
 
 ### Files with Important Comments
 
