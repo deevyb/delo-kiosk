@@ -59,7 +59,8 @@
   /order          # Customer-facing menu and ordering
   /kitchen        # Real-time kitchen display
   /admin          # Passcode-protected admin panel
-  /api            # API routes for database operations
+  /api
+    /orders       # POST: Create new order
 /components       # Shared UI components
 /lib              # Utilities, Supabase client, types
 /hooks            # Custom React hooks (useOrders, useRealtime, etc.)
@@ -83,6 +84,7 @@ CREATE TABLE menu_items (
   name TEXT NOT NULL,
   description TEXT,
   image_url TEXT,
+  category TEXT DEFAULT 'Classics',  -- 'Signature' or 'Classics'
   is_active BOOLEAN DEFAULT true,
   display_order INTEGER DEFAULT 0,
   modifier_config JSONB DEFAULT '{"milk": true, "temperature": true}',
@@ -323,4 +325,4 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 ---
 
-_Last updated: January 2, 2025 — Phase 3 complete, added description column_
+_Last updated: January 3, 2025 — Phase 5 complete, order submission API working_

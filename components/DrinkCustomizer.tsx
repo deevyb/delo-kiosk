@@ -9,7 +9,11 @@ interface DrinkCustomizerProps {
   modifiers: Modifier[]
   selectedModifiers: { milk?: string; temperature?: string }
   onModifierChange: (category: 'milk' | 'temperature', value: string) => void
+  customerName: string
+  onNameChange: (name: string) => void
+  onSubmit: () => void
   onClose: () => void
+  isSubmitting: boolean
 }
 
 /**
@@ -26,7 +30,11 @@ export default function DrinkCustomizer({
   modifiers,
   selectedModifiers,
   onModifierChange,
+  customerName,
+  onNameChange,
+  onSubmit,
   onClose,
+  isSubmitting,
 }: DrinkCustomizerProps) {
   const milkOptions = modifiers.filter((m) => m.category === 'milk')
   const temperatureOptions = modifiers.filter((m) => m.category === 'temperature')
@@ -44,7 +52,7 @@ export default function DrinkCustomizer({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         onClick={onClose}
-        className="fixed inset-0 bg-delo-navy/30 backdrop-blur-md z-40"
+        className="fixed inset-0 bg-delo-navy/40 z-40"
         aria-label="Close modal"
       />
 
@@ -62,7 +70,7 @@ export default function DrinkCustomizer({
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
-          className="bg-delo-cream rounded-3xl shadow-2xl p-8 w-full max-w-lg relative"
+          className="bg-delo-cream rounded-xl shadow-2xl p-8 w-full max-w-lg relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* X close button */}
@@ -77,13 +85,11 @@ export default function DrinkCustomizer({
           </motion.button>
 
           {/* Drink name and description */}
-          <h1 className="font-yatra text-4xl text-delo-maroon pr-12">
+          <h1 className="font-bricolage font-bold text-4xl text-delo-maroon pr-12">
             {drink.name}
           </h1>
           {drink.description && (
-            <p className="font-roboto-mono text-delo-navy/60 mt-2 mb-8 pr-12">
-              {drink.description}
-            </p>
+            <p className="text-description mt-2 mb-8 pr-12">{drink.description}</p>
           )}
           {!drink.description && <div className="mb-8" />}
 
@@ -109,10 +115,30 @@ export default function DrinkCustomizer({
               )}
             </div>
           ) : (
-            <p className="font-roboto-mono text-delo-navy/60">
-              No customization options for this drink.
-            </p>
+            <p className="text-description">No customization options for this drink.</p>
           )}
+
+          {/* Name input */}
+          <div className="mt-8">
+            <label className="block label-modifier mb-3">Your Name</label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => onNameChange(e.target.value)}
+              placeholder="Name"
+              className="w-full h-16 px-6 text-modifier-option text-delo-navy bg-white rounded-xl border border-delo-navy/10 focus:border-delo-maroon focus:outline-none transition-colors"
+            />
+          </div>
+
+          {/* Submit button */}
+          <motion.button
+            onClick={onSubmit}
+            disabled={!customerName.trim() || isSubmitting}
+            whileTap={{ scale: 0.97 }}
+            className="btn-primary mt-6 w-full"
+          >
+            {isSubmitting ? 'Sending...' : 'Submit'}
+          </motion.button>
         </div>
       </motion.div>
     </>

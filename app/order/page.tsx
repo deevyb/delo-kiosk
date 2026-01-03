@@ -1,11 +1,14 @@
 import { supabase, MenuItem, Modifier } from '@/lib/supabase'
 import OrderClient from '@/components/OrderClient'
 
+// Force fresh data on each request (category column was added after initial build)
+export const dynamic = 'force-dynamic'
+
 async function getMenuData() {
   // Fetch active menu items, sorted by display order
   const { data: menuItems, error: menuError } = await supabase
     .from('menu_items')
-    .select('*')
+    .select('id, name, description, image_url, category, is_active, display_order, modifier_config, default_modifiers, created_at, updated_at')
     .eq('is_active', true)
     .order('display_order')
 

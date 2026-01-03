@@ -34,9 +34,7 @@ export default function ModifierSelector({
   return (
     <div className="mb-8">
       {/* Category label */}
-      <p className="font-roboto-mono text-sm text-delo-navy/60 uppercase tracking-wide mb-3">
-        {categoryLabel}
-      </p>
+      <p className="label-modifier mb-3">{categoryLabel}</p>
 
       {/* Button group */}
       <div className="flex gap-3">
@@ -49,7 +47,7 @@ export default function ModifierSelector({
               onClick={() => onSelect(option.option)}
               whileTap={{ scale: 0.97 }}
               className={`
-                px-8 py-4 rounded-xl font-bricolage font-medium text-lg
+                px-8 py-4 rounded-xl text-modifier-option
                 transition-colors duration-200
                 min-w-[120px]
                 ${

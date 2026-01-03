@@ -88,7 +88,7 @@ export default function DrinkCard({
             : '0 2px 8px rgba(0,0,0,0.06)',
         }}
       >
-        <span className="font-yatra text-2xl text-delo-navy leading-tight">
+        <span className="font-bricolage font-semibold text-2xl text-delo-navy leading-tight">
           {drink.name}
         </span>
       </motion.button>

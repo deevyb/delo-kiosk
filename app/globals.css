@@ -2,8 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Delo brand fonts from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Roboto+Mono:ital,wght@0,400;0,500;1,400&family=Yatra+One&display=swap');
+/* Self-hosted Cooper font */
+@font-face {
+  font-family: 'Cooper Md BT';
+  src: url('/fonts/CooperMdBTMedium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cooper Md BT';
+  src: url('/fonts/CooperMdBTMediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
 
 /* Base styles for Delo */
 html,
@@ -32,4 +46,35 @@ html {
 ::selection {
   background-color: #921c12;
   color: #f9f6ee;
+}
+
+/* ============================================
+   Shared Component Styles
+   Single source of truth for repeated patterns
+   ============================================ */
+
+/* Modifier/input labels (Milk, Temperature, Your Name) */
+.label-modifier {
+  @apply font-cooper text-sm uppercase tracking-wide text-delo-navy/60;
+}
+
+/* Small descriptive text */
+.text-description {
+  @apply font-roboto-mono text-delo-navy/60;
+}
+
+/* Primary action button (maroon) */
+.btn-primary {
+  @apply h-16 rounded-xl font-bricolage font-semibold text-xl uppercase tracking-wide;
+  @apply bg-delo-maroon text-delo-cream;
+  @apply transition-colors;
+}
+
+.btn-primary:disabled {
+  @apply bg-delo-navy/20 text-delo-navy/40 cursor-not-allowed;
+}
+
+/* Modifier option text (buttons like "Regular"/"Oat" and name input) */
+.text-modifier-option {
+  @apply font-manrope font-semibold text-lg;
 }

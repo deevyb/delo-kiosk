@@ -13,6 +13,7 @@ export interface MenuItem {
   name: string
   description: string | null
   image_url: string | null
+  category: string
   is_active: boolean
   display_order: number
   modifier_config: {

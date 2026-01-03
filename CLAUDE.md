@@ -76,8 +76,10 @@ Delo Coffee is inspired by the _delo_ — a traditional Indian courtyard where s
 
 **Typography:**
 
-- Yatra One — bold headers, brand name
-- Bricolage Grotesque — drink names, buttons
+- Yatra One — page title ("Delo Coffee")
+- Bricolage Grotesque — drink names, category headers, buttons
+- Cooper Md BT Medium — modifier labels (Milk, Temperature, Your Name)
+- Manrope — modifier options (Regular, Oat, Hot, Iced), input text
 - Roboto Mono — descriptions, details
 
 **Design Principles:**
@@ -242,16 +244,16 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** January 2, 2025 (evening)
+> **Last Updated:** January 3, 2025
 >
-> **Next Up:** Phase 4 - Add customer name input to customization modal
+> **Next Up:** Phase 6 - Confirmation screen
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 | Route      | Status         | Description                                    |
 | ---------- | -------------- | ---------------------------------------------- |
 | `/`        | ✅ Deployed    | Landing page with navigation                   |
-| `/order`   | 🚧 In Progress | Menu grid + customization modal done, name input next |
+| `/order`   | 🚧 In Progress | Menu grid, customization modal, order submission working |
 | `/kitchen` | 🚧 Placeholder | Kitchen display (after /order complete)        |
 | `/admin`   | 🚧 Placeholder | Admin panel (after /kitchen)                   |
 
@@ -259,8 +261,8 @@ The owner will know this project succeeded when:
 
 - GitHub: [deevyb/delo-kiosk](https://github.com/deevyb/delo-kiosk)
 - Vercel: Auto-deploys on push to main
-- Supabase: Database ready, menu seeded (7 drinks), realtime enabled
-- Code Quality: Prettier formatting, ESLint, Error Boundary for crash prevention
+- Supabase: Database ready, menu seeded (7 drinks with categories), realtime enabled
+- Code Quality: Prettier formatting, ESLint, Error Boundary, shared CSS classes
 
 ---
 
@@ -270,9 +272,9 @@ The owner will know this project succeeded when:
 |-------|--------|-------------|
 | 1. Menu Grid | ✅ Done | Drink cards in 3-column grid, fetches from Supabase |
 | 2. Animations | ✅ Done | Entrance animations, press-in effect, selection state |
-| 3. Customization | ✅ Done | Floating modal, blur backdrop, X button, click-outside-to-close, drink descriptions |
-| 4. Name Input | ⏳ Pending | Customer name field |
-| 5. Submit Order | ⏳ Pending | API route, database write |
+| 3. Customization | ✅ Done | Floating modal, soft dim backdrop, X button, click-outside-to-close |
+| 4. Name Input | ✅ Done | Customer name field in modal, required for submit |
+| 5. Submit Order | ✅ Done | API route `/api/orders`, loading state, saves to database |
 | 6. Confirmation | ⏳ Pending | Success screen with order summary |
 | 7. Auto-Reset | ⏳ Pending | 3-second reset, error handling |
 
@@ -295,31 +297,52 @@ The owner will know this project succeeded when:
 - Spring physics: stiffness 400, damping 30 (minimal bounce)
 
 **Customization Screen (Square-style modal):**
-- **Layout:** Floating modal panel over dimmed menu grid
-- **Transition:** Slide-up + fade-in with blur backdrop (Square approach, not Netflix layoutId)
+- **Layout:** Floating modal panel over softly dimmed menu grid (no blur)
+- **Transition:** Slide-up + fade-in
 - **Close:** Both X button in corner AND backdrop tap to close
 - **Animation:** Spring physics (stiffness 400, damping 30) for snappy, minimal-bounce feel
-- **Descriptions:** Each drink shows its description below the name (stored in DB)
+- **Corner radius:** `rounded-xl` (matches drink cards)
 
-**Database Schema Update:**
-- Added `description` column to `menu_items` table (text, nullable)
+### Typography System (Updated January 2, 2025)
+
+| Element | Font | Weight | Size |
+|---------|------|--------|------|
+| Page title "Delo Coffee" | Yatra One | 400 | 48px (text-5xl) |
+| Category headers | Bricolage | SemiBold | 16px (text-base) |
+| Drink names (cards) | Bricolage | SemiBold | 24px (text-2xl) |
+| Drink name (modal) | Bricolage | Bold | 36px (text-4xl) |
+| Modifier labels | Cooper | Medium | 14px (text-sm) |
+| Modifier buttons | Manrope | SemiBold | 18px (text-lg) |
+| Descriptions | Roboto Mono | Regular | 16px (text-base) |
+
+### Menu Categories
+
+- **Signature:** Elaichi Latte, Ginger Slap Latte, Tubo Latte
+- **Classics:** Latte, Cortado, Macchiato, Espresso
+- Stored in `category` column on `menu_items` table
+
+### Shared CSS Classes (in globals.css)
+
+To prevent styling inconsistencies, common patterns are defined once:
+- `.label-modifier` — Modifier labels (Milk, Temperature, Your Name)
+- `.text-modifier-option` — Text inside modifier buttons and name input (Manrope SemiBold 18px)
+- `.text-description` — Small descriptive text
+- `.btn-primary` — Maroon submit buttons (with disabled state)
 
 ### Files with Important Comments
 
-- `components/DrinkCard.tsx` - Contains detailed ANIMATION CONFIGURATION guide and SPRING PHYSICS GUIDE explaining how to tweak animation values
+- `components/DrinkCard.tsx` - ANIMATION CONFIGURATION guide and SPRING PHYSICS GUIDE
 
 ---
 
 ## What To Do Next Session
 
 1. Read this file (CLAUDE.md)
-2. **Start Phase 4:** Add customer name input to customization modal
-   - Create `NameInput` component (large, clear text field)
-   - Add to `DrinkCustomizer` below modifiers
-   - Make it a required field with validation
-   - Show error message if empty on submit attempt
-3. Test the name input interaction
-4. Then continue to Phase 5 (Submit Order)
+2. **Start Phase 6:** Confirmation screen
+   - Show success screen after order submits (screen state is already `'confirmed'`)
+   - Display order summary: "Sarah: Elaichi Latte, Oat Milk, Iced"
+   - Use `submittedOrder` state (already populated from API response)
+3. Then continue to Phase 7 (Auto-reset after 3 seconds)
 
 **Blockers:** None
 

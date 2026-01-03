@@ -15,10 +15,11 @@ const config: Config = {
         'delo-gold': '#D4A574',
       },
       fontFamily: {
-        // We'll load these via Google Fonts in layout
         yatra: ['Yatra One', 'cursive'],
         bricolage: ['Bricolage Grotesque', 'sans-serif'],
         'roboto-mono': ['Roboto Mono', 'monospace'],
+        cooper: ['Cooper Md BT', 'serif'],
+        manrope: ['Manrope', 'sans-serif'],
       },
     },
   },
