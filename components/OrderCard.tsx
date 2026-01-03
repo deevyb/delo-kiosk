@@ -9,6 +9,7 @@ interface OrderCardProps {
   onMarkReady: (orderId: string) => void
   onCancelClick: () => void
   isUpdating: boolean
+  isNew?: boolean // True for orders that arrive via realtime (should animate in)
 }
 
 /**
@@ -34,6 +35,7 @@ export default function OrderCard({
   onMarkReady,
   onCancelClick,
   isUpdating,
+  isNew = false,
 }: OrderCardProps) {
   // Track current time for relative time display (updates every minute)
   const [now, setNow] = useState(Date.now())
@@ -54,7 +56,7 @@ export default function OrderCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -20, scale: 0.98 }}
+      initial={isNew ? { opacity: 0, y: -20, scale: 0.98 } : false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: -100, scale: 0.95 }}
       transition={{ type: 'spring', ...springConfig }}
