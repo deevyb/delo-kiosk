@@ -78,3 +78,8 @@ html {
 .text-modifier-option {
   @apply font-manrope font-semibold text-lg;
 }
+
+/* Unavailable/sold-out item state */
+.item-unavailable {
+  @apply opacity-50;
+}

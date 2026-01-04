@@ -248,7 +248,7 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** January 4, 2025
+> **Last Updated:** January 4, 2025 (evening)
 >
 > **Next Up:** `/admin` route — Modifiers section (Phase 4)
 
@@ -365,6 +365,17 @@ To prevent styling inconsistencies, common patterns are defined once:
 - `.text-modifier-option` — Text inside modifier buttons and name input (Manrope SemiBold 18px)
 - `.text-description` — Small descriptive text
 - `.btn-primary` — Maroon submit buttons (with disabled state)
+- `.item-unavailable` — 50% opacity for sold-out/inactive items
+
+### Sold-Out Item Display (Added January 4, 2025)
+
+When items are toggled OFF in admin, they now appear on `/order` with:
+- 50% opacity (faded look)
+- "Sold Out" maroon pill badge in top-right corner
+- Tap disabled (no interaction)
+- Cursor shows not-allowed
+
+This keeps items visible so customers know what's normally available.
 
 ### Files with Important Comments
 
@@ -375,16 +386,19 @@ To prevent styling inconsistencies, common patterns are defined once:
 ## What To Do Next Session
 
 1. Read this file (CLAUDE.md)
-2. **Continue `/admin` route — Phase 4: Modifiers Section**
+2. **Test sold-out feature** (if not already done)
+   - Open `/admin`, toggle a drink OFF
+   - Open `/order`, verify drink shows faded with "Sold Out" badge
+3. **Continue `/admin` route — Phase 4: Modifiers Section**
    - Create `/api/admin/modifiers` route (GET, POST, PATCH, DELETE)
    - Build ModifiersSection component (two groups: Milk, Temperature)
    - Build ModifierRow component (option name + toggle + edit + delete)
    - Build ModifierForm modal (add/edit modifier)
    - Delete confirmation modal (soft delete approach)
-3. **Then Phase 5: Export Section**
+4. **Then Phase 5: Export Section**
    - Create `/api/admin/export` route (generates CSV)
    - Build ExportSection component (date pickers + download button)
-4. **Finally Phase 6: Polish + iPad Testing**
+5. **Finally Phase 6: Polish + iPad Testing**
 
 **Key Files for Admin:**
 - `components/AdminClient.tsx` — Main wrapper, manages state

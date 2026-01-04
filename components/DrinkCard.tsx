@@ -48,36 +48,58 @@ const entranceVariants = {
  */
 
 export default function DrinkCard({ drink, index, isSelected, onSelect }: DrinkCardProps) {
+  const isSoldOut = !drink.is_active
+
+  const handleClick = () => {
+    if (isSoldOut) return
+    onSelect(drink)
+  }
+
   return (
     <motion.div variants={entranceVariants} initial="hidden" animate="visible" custom={index}>
       <motion.button
-        onClick={() => onSelect(drink)}
-        whileTap={{
-          scale: 0.97,
-          y: 2,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          transition: {
-            type: 'spring',
-            stiffness: 400,
-            damping: 30,
-          },
-        }}
+        onClick={handleClick}
+        whileTap={
+          isSoldOut
+            ? undefined
+            : {
+                scale: 0.97,
+                y: 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                transition: {
+                  type: 'spring',
+                  stiffness: 400,
+                  damping: 30,
+                },
+              }
+        }
         className={`
-          w-full aspect-square rounded-xl p-6
+          relative w-full aspect-square rounded-xl p-6
           flex flex-col items-center justify-center text-center
+          ${isSoldOut ? 'item-unavailable cursor-not-allowed' : ''}
           ${
-            isSelected
+            isSelected && !isSoldOut
               ? 'border-2 border-delo-maroon'
-              : 'border border-delo-navy/5 hover:border-delo-maroon/20'
+              : 'border border-delo-navy/5'
           }
+          ${!isSoldOut && !isSelected ? 'hover:border-delo-maroon/20' : ''}
         `}
         style={{
           backgroundColor: '#fff',
-          boxShadow: isSelected
-            ? '0 0 0 2px #921C12, 0 4px 12px rgba(0,0,0,0.1)'
-            : '0 2px 8px rgba(0,0,0,0.06)',
+          boxShadow:
+            isSelected && !isSoldOut
+              ? '0 0 0 2px #921C12, 0 4px 12px rgba(0,0,0,0.1)'
+              : '0 2px 8px rgba(0,0,0,0.06)',
         }}
+        disabled={isSoldOut}
       >
+        {/* Sold Out badge */}
+        {isSoldOut && (
+          <span className="absolute top-3 right-3 bg-delo-maroon text-delo-cream text-xs font-manrope font-semibold px-2 py-1 rounded-full">
+            Sold Out
+          </span>
+        )}
+
         <span className="font-bricolage font-semibold text-2xl text-delo-navy leading-tight">
           {drink.name}
         </span>
