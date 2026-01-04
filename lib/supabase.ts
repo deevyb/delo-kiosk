@@ -16,21 +16,16 @@ export interface MenuItem {
   category: string
   is_active: boolean
   display_order: number
-  modifier_config: {
-    milk: boolean
-    temperature: boolean
-  }
-  default_modifiers: {
-    milk: string | null
-    temperature: string | null
-  }
+  // Dynamic modifier config - keys are modifier categories (e.g., "milk", "temperature")
+  modifier_config: Record<string, boolean>
+  default_modifiers: Record<string, string | null>
   created_at: string
   updated_at: string
 }
 
 export interface Modifier {
   id: string
-  category: 'milk' | 'temperature'
+  category: string // Dynamic - could be "milk", "temperature", or any future category
   option: string
   is_active: boolean
   display_order: number

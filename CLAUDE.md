@@ -248,9 +248,9 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** January 3, 2025
+> **Last Updated:** January 4, 2025
 >
-> **Next Up:** `/admin` route — Admin panel
+> **Next Up:** `/admin` route — Modifiers section (Phase 4)
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
@@ -259,7 +259,7 @@ The owner will know this project succeeded when:
 | `/`        | ✅ Deployed    | Landing page with navigation                                    |
 | `/order`   | ✅ Complete    | Full ordering flow with confirmation & auto-reset               |
 | `/kitchen` | ✅ Complete    | Real-time barista display with 2-col grid, optimized typography |
-| `/admin`   | 🚧 Placeholder | Admin panel (next up)                                           |
+| `/admin`   | 🚧 In Progress | Passcode + tabs + menu items done; modifiers & export pending   |
 
 **Infrastructure:** All complete
 
@@ -267,6 +267,7 @@ The owner will know this project succeeded when:
 - Vercel: Auto-deploys on push to main
 - Supabase: Database ready, menu seeded (7 drinks with categories), realtime enabled
 - Code Quality: Prettier formatting, ESLint, Error Boundary, shared CSS classes
+- Caching: `force-dynamic` + `no-store` headers on /order and /kitchen for instant admin updates
 
 ---
 
@@ -296,6 +297,19 @@ The owner will know this project succeeded when:
 | 6. Animations     | ✅ Done | Card enter/exit, tab switch, press effects (spring 400/30)     |
 | 7. Error Handling | ✅ Done | Offline banner, cancel confirmation modal, API error display   |
 | 8. UI Polish      | ✅ Done | 2-col grid, barista-optimized typography (drink first)         |
+
+---
+
+## /admin Build Progress (6 Phases)
+
+| Phase                | Status      | Description                                                    |
+| -------------------- | ----------- | -------------------------------------------------------------- |
+| 1. Passcode Gate     | ✅ Done     | API route + PasscodeGate component, localStorage session       |
+| 2. Layout + Tabs     | ✅ Done     | AdminClient + AdminTabs with animated pill indicator           |
+| 3. Menu Items        | ✅ Done     | Toggle drinks on/off, edit modifier config per item            |
+| 4. Modifiers         | 🚧 Pending  | Add/edit/delete milk and temperature options                   |
+| 5. Export            | 🚧 Pending  | Download CSV of orders by date range                           |
+| 6. Polish + Testing  | 🚧 Pending  | iPad testing, animation review, error states                   |
 
 ---
 
@@ -361,12 +375,21 @@ To prevent styling inconsistencies, common patterns are defined once:
 ## What To Do Next Session
 
 1. Read this file (CLAUDE.md)
-2. **Build `/admin` route** — Admin panel for owner
-   - Passcode protection (owner sets their own)
-   - Menu Items: Toggle drinks on/off, edit modifiers per item
-   - Modifiers: Add/edit/delete milk and temperature options
-   - Export: Download CSV of orders by date range
-3. Reference the spec in `Delo Coffee Ordering App – MVP Spec.md` for full requirements
+2. **Continue `/admin` route — Phase 4: Modifiers Section**
+   - Create `/api/admin/modifiers` route (GET, POST, PATCH, DELETE)
+   - Build ModifiersSection component (two groups: Milk, Temperature)
+   - Build ModifierRow component (option name + toggle + edit + delete)
+   - Build ModifierForm modal (add/edit modifier)
+   - Delete confirmation modal (soft delete approach)
+3. **Then Phase 5: Export Section**
+   - Create `/api/admin/export` route (generates CSV)
+   - Build ExportSection component (date pickers + download button)
+4. **Finally Phase 6: Polish + iPad Testing**
+
+**Key Files for Admin:**
+- `components/AdminClient.tsx` — Main wrapper, manages state
+- `components/MenuItemsSection.tsx` — Reference for section pattern
+- `app/api/admin/menu-items/route.ts` — Reference for API pattern
 
 **Blockers:** None
 

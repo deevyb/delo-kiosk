@@ -1,8 +1,9 @@
 import { supabase, MenuItem, Modifier } from '@/lib/supabase'
 import OrderClient from '@/components/OrderClient'
 
-// Force fresh data on each request (category column was added after initial build)
+// Force fresh data on each request - critical for admin toggles to take effect immediately
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function getMenuData() {
   // Fetch active menu items, sorted by display order
