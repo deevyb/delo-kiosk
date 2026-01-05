@@ -249,9 +249,9 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** January 4, 2026
+> **Last Updated:** January 5, 2026
 >
-> **Next Up:** Dashboard stats API + UI, then Visual Personality with /frontend-design
+> **Next Up:** Visual Personality with /frontend-design, then iPad testing
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
@@ -309,10 +309,10 @@ The owner will know this project succeeded when:
 | 2. Layout + Tabs    | ✅ Done    | AdminClient + AdminTabs with animated pill indicator     |
 | 3. Menu Items       | ✅ Done    | Toggle drinks on/off, edit modifier config per item      |
 | 4. Modifiers        | ✅ Done    | Add/edit/toggle milk and temperature options             |
-| 5. Dashboard        | ✅ Done    | CSV export with date range, ISO format for analytics     |
+| 5. Dashboard        | ✅ Done    | Stats + CSV export with date range                       |
 | 6. Polish + Testing | 🚧 Pending | iPad testing, animation review, codebase health audit    |
 
-**Known Issue (Phase 5):** CSV filename doesn't always include full date range. Functional but cosmetic bug to fix later.
+**Known Issue:** CSV filename doesn't always include full date range. Functional but cosmetic bug to fix later.
 
 ---
 
@@ -436,37 +436,34 @@ This follows UX best practice: disable rather than hide, so customers see what's
 ## What To Do Next Session
 
 1. Read this file (CLAUDE.md)
-2. **Continue with Dashboard Stats:**
-   - Create `/api/admin/stats` endpoint (SQL aggregations for counts, popular drinks, modifier preferences)
-   - Update `DashboardSection.tsx` to fetch and display stats
-   - Stats: Today's orders, All-time orders, Top 20 drinks (scrollable), Modifier preferences (dynamic bars)
-3. **Then Visual Design:**
-   - Run `/frontend-design` for visual personality on order page
-   - iPad testing when ready
+2. **Visual Personality:**
+   - Run `/frontend-design` for visual polish on order page
+   - Consider drink card enhancements, page transitions
+3. **iPad Testing:**
+   - Test on actual iPad in landscape mode
+   - Verify touch targets, animations, responsiveness
 
-**Plan file:** `/Users/deevyb/.claude/plans/scalable-giggling-teacup.md` has detailed implementation plan for stats.
+**New Features Added This Session (January 5, 2026):**
 
-**New Features Added This Session:**
-
-- **Shared Modal Component** — `Modal.tsx` wrapper for consistent modal styling
-  - All form modals now use this component
-  - Handles backdrop, panel, close button, animations
-- **Shared CSS Classes** — Added to globals.css for form consistency
-  - `.input-form`, `.select-form`, `.btn-secondary`, `.btn-modal-action`
-  - `.modal-title`, `.modal-description`, `.error-banner`
-  - `.checkbox-form`, `.checkbox-label`
+- **Dashboard Stats UI** — Full statistics display in admin Dashboard tab
+  - Today + All-Time order counts with status breakdown (placed/ready/canceled)
+  - Popular Drinks list (top 20, scrollable)
+  - Modifier Preferences with visual progress bars (dynamic categories)
+  - Loading skeleton and error handling
+- **Stats API** — `GET /api/admin/stats` endpoint
+  - Returns aggregated order counts, popular drinks, modifier breakdown
+  - `force-dynamic` for fresh data on every request
+- **Server-Side Modifier Defaults** — Orders API now applies drink defaults
+  - If an order is missing modifiers, the drink's default_modifiers are applied
+  - Ensures data integrity for analytics
+- **Data Backfill** — Fixed historical order missing temperature
 
 **Files Changed:**
 
-- `components/Modal.tsx` — NEW: Shared modal wrapper component
-- `app/globals.css` — Added shared form/modal CSS classes
-- `components/DrinkCustomizer.tsx` — Refactored to use Modal + shared classes
-- `components/NewMenuItemForm.tsx` — Refactored to use Modal + shared classes
-- `components/ModifierForm.tsx` — Refactored to use Modal + shared classes
-- `components/MenuItemEditor.tsx` — Refactored to use Modal + shared classes
-- `components/MenuItemsSection.tsx` — Removed AnimatePresence wrappers
-- `components/ModifiersSection.tsx` — Removed AnimatePresence wrapper
-- `components/OrderClient.tsx` — Removed AnimatePresence wrapper
+- `app/api/admin/stats/route.ts` — NEW: Stats aggregation endpoint
+- `app/api/orders/route.ts` — Added server-side modifier defaults
+- `components/DashboardSection.tsx` — Full rewrite with stats UI + modular subcomponents
+- `lib/supabase.ts` — Added DashboardStats, OrderCounts, DrinkCount, ModifierOption types
 
 **Known Issues:**
 

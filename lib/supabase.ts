@@ -44,3 +44,29 @@ export interface Order {
   created_at: string
   updated_at: string
 }
+
+// Dashboard stats types
+export interface OrderCounts {
+  total: number
+  placed: number
+  ready: number
+  canceled: number
+}
+
+export interface DrinkCount {
+  name: string
+  count: number
+}
+
+export interface ModifierOption {
+  option: string
+  count: number
+  percentage: number
+}
+
+export interface DashboardStats {
+  today: OrderCounts
+  allTime: OrderCounts
+  popularDrinks: DrinkCount[]
+  modifierBreakdown: Record<string, ModifierOption[]>
+}

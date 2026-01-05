@@ -1,25 +1,47 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Order } from '@/lib/supabase'
+import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
 
 /**
- * DashboardSection - Export orders as CSV
+ * DashboardSection - Stats overview and CSV export
  *
- * CSV format optimized for Google Sheets/Excel pivot tables:
- * - ISO date format (YYYY-MM-DD) for proper date recognition
- * - Separate Date and Time columns for flexible grouping
- *
- * Future: Will include orders table and analytics
+ * Shows:
+ * - Order counts (today + all-time) with status breakdown
+ * - Popular drinks list (top 20)
+ * - Modifier preferences with visual bars
+ * - CSV export functionality
  */
 export default function DashboardSection() {
-  // Use refs to read values directly from DOM at download time
-  // This avoids state sync issues with controlled date inputs
+  // Stats state
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
+  const [statsError, setStatsError] = useState<string | null>(null)
+
+  // CSV export state
   const startDateRef = useRef<HTMLInputElement>(null)
   const endDateRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Fetch stats on mount
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/admin/stats')
+        if (!response.ok) throw new Error('Failed to fetch stats')
+        const data = await response.json()
+        setStats(data)
+      } catch (err) {
+        console.error('Error fetching stats:', err)
+        setStatsError('Failed to load statistics')
+      } finally {
+        setIsLoadingStats(false)
+      }
+    }
+    fetchStats()
+  }, [])
 
   // Format date for spreadsheet (ISO format recognized by Google Sheets/Excel)
   const formatDate = (isoString: string): string => {
@@ -121,8 +143,38 @@ export default function DashboardSection() {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
-      <h2 className="font-bricolage font-semibold text-xl text-delo-navy mb-2">Export Orders</h2>
+    <div className="space-y-6">
+      {/* Stats Section */}
+      {isLoadingStats ? (
+        <StatsLoadingSkeleton />
+      ) : statsError ? (
+        <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+          <p className="text-red-600 text-sm">{statsError}</p>
+        </div>
+      ) : stats ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          {/* Order Count Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <StatsCard title="Today" counts={stats.today} />
+            <StatsCard title="All Time" counts={stats.allTime} />
+          </div>
+
+          {/* Popular Drinks + Modifier Preferences */}
+          <div className="grid grid-cols-2 gap-4">
+            <PopularDrinksList drinks={stats.popularDrinks} />
+            <ModifierPreferences breakdown={stats.modifierBreakdown} />
+          </div>
+        </motion.div>
+      ) : null}
+
+      {/* CSV Export Section */}
+      <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+        <h2 className="font-bricolage font-semibold text-xl text-delo-navy mb-2">Export Orders</h2>
 
       {/* Error banner */}
       <AnimatePresence>
@@ -177,6 +229,130 @@ export default function DashboardSection() {
       >
         {isLoading ? 'Downloading...' : 'Download CSV'}
       </button>
+      </div>
+    </div>
+  )
+}
+
+// --- Subcomponents (modular for easy iteration) ---
+
+/** Stats card showing order counts with status breakdown */
+function StatsCard({ title, counts }: { title: string; counts: OrderCounts }) {
+  return (
+    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1">
+        {title}
+      </h3>
+      <p className="font-bricolage font-bold text-4xl text-delo-maroon mb-3">
+        {counts.total}
+        <span className="text-lg font-semibold text-delo-navy/40 ml-2">orders</span>
+      </p>
+      <div className="flex gap-4 text-sm font-manrope">
+        <span className="text-delo-navy/70">
+          <span className="font-semibold text-[#C85A2E]">{counts.placed}</span> placed
+        </span>
+        <span className="text-delo-navy/70">
+          <span className="font-semibold text-green-600">{counts.ready}</span> ready
+        </span>
+        <span className="text-delo-navy/70">
+          <span className="font-semibold text-red-500">{counts.canceled}</span> canceled
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** Scrollable list of top drinks */
+function PopularDrinksList({ drinks }: { drinks: DrinkCount[] }) {
+  return (
+    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-4">
+        Popular Drinks
+      </h3>
+      {drinks.length === 0 ? (
+        <p className="text-description text-sm">No orders yet</p>
+      ) : (
+        <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
+          {drinks.map((drink, index) => (
+            <div key={drink.name} className="flex items-center justify-between">
+              <span className="font-manrope text-delo-navy">
+                <span className="text-delo-navy/40 w-6 inline-block">{index + 1}.</span>
+                {drink.name}
+              </span>
+              <span className="font-manrope font-semibold text-delo-maroon">{drink.count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Modifier preferences with visual progress bars */
+function ModifierPreferences({
+  breakdown,
+}: {
+  breakdown: Record<string, ModifierOption[]>
+}) {
+  const categories = Object.entries(breakdown)
+
+  if (categories.length === 0) {
+    return (
+      <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+        <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-4">
+          Modifier Preferences
+        </h3>
+        <p className="text-description text-sm">No data yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-4">
+        Modifier Preferences
+      </h3>
+      <div className="space-y-5">
+        {categories.map(([category, options]) => (
+          <div key={category}>
+            <p className="font-cooper text-sm text-delo-navy/70 mb-2 capitalize">{category}</p>
+            <div className="space-y-2">
+              {options.map((option) => (
+                <div key={option.option} className="flex items-center gap-3">
+                  <div className="flex-1 bg-delo-navy/10 rounded-full h-3">
+                    <div
+                      className="bg-delo-maroon rounded-full h-3 transition-all duration-500"
+                      style={{ width: `${option.percentage}%` }}
+                    />
+                  </div>
+                  <span className="font-manrope font-semibold text-sm text-delo-navy w-10 text-right">
+                    {option.percentage}%
+                  </span>
+                  <span className="font-manrope text-sm text-delo-navy/70 w-16">
+                    {option.option}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Loading skeleton for stats */
+function StatsLoadingSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-32" />
+        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-32" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-48" />
+        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-48" />
+      </div>
     </div>
   )
 }
