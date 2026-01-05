@@ -248,18 +248,18 @@ The owner will know this project succeeded when:
 
 ## Current Status
 
-> **Last Updated:** January 4, 2025 (evening)
+> **Last Updated:** January 4, 2025 (night)
 >
-> **Next Up:** `/admin` route — Modifiers section (Phase 4)
+> **Next Up:** `/admin` route — Export section (Phase 5)
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
-| Route      | Status         | Description                                                     |
-| ---------- | -------------- | --------------------------------------------------------------- |
-| `/`        | ✅ Deployed    | Landing page with navigation                                    |
-| `/order`   | ✅ Complete    | Full ordering flow with confirmation & auto-reset               |
-| `/kitchen` | ✅ Complete    | Real-time barista display with 2-col grid, optimized typography |
-| `/admin`   | 🚧 In Progress | Passcode + tabs + menu items done; modifiers & export pending   |
+| Route      | Status         | Description                                                       |
+| ---------- | -------------- | ----------------------------------------------------------------- |
+| `/`        | ✅ Deployed    | Landing page with navigation                                      |
+| `/order`   | ✅ Complete    | Full ordering flow with confirmation & auto-reset                 |
+| `/kitchen` | ✅ Complete    | Real-time barista display with 2-col grid, optimized typography   |
+| `/admin`   | 🚧 In Progress | Passcode + tabs + menu items + modifiers done; export pending     |
 
 **Infrastructure:** All complete
 
@@ -302,14 +302,14 @@ The owner will know this project succeeded when:
 
 ## /admin Build Progress (6 Phases)
 
-| Phase                | Status      | Description                                                    |
-| -------------------- | ----------- | -------------------------------------------------------------- |
-| 1. Passcode Gate     | ✅ Done     | API route + PasscodeGate component, localStorage session       |
-| 2. Layout + Tabs     | ✅ Done     | AdminClient + AdminTabs with animated pill indicator           |
-| 3. Menu Items        | ✅ Done     | Toggle drinks on/off, edit modifier config per item            |
-| 4. Modifiers         | 🚧 Pending  | Add/edit/delete milk and temperature options                   |
-| 5. Export            | 🚧 Pending  | Download CSV of orders by date range                           |
-| 6. Polish + Testing  | 🚧 Pending  | iPad testing, animation review, error states                   |
+| Phase               | Status     | Description                                              |
+| ------------------- | ---------- | -------------------------------------------------------- |
+| 1. Passcode Gate    | ✅ Done    | API route + PasscodeGate component, localStorage session |
+| 2. Layout + Tabs    | ✅ Done    | AdminClient + AdminTabs with animated pill indicator     |
+| 3. Menu Items       | ✅ Done    | Toggle drinks on/off, edit modifier config per item      |
+| 4. Modifiers        | ✅ Done    | Add/edit/toggle milk and temperature options             |
+| 5. Export           | 🚧 Pending | Download CSV of orders by date range                     |
+| 6. Polish + Testing | 🚧 Pending | iPad testing, animation review, error states             |
 
 ---
 
@@ -370,6 +370,7 @@ To prevent styling inconsistencies, common patterns are defined once:
 ### Sold-Out Item Display (Added January 4, 2025)
 
 When items are toggled OFF in admin, they now appear on `/order` with:
+
 - 50% opacity (faded look)
 - "Sold Out" maroon pill badge in top-right corner
 - Tap disabled (no interaction)
@@ -386,24 +387,22 @@ This keeps items visible so customers know what's normally available.
 ## What To Do Next Session
 
 1. Read this file (CLAUDE.md)
-2. **Test sold-out feature** (if not already done)
-   - Open `/admin`, toggle a drink OFF
-   - Open `/order`, verify drink shows faded with "Sold Out" badge
-3. **Continue `/admin` route — Phase 4: Modifiers Section**
-   - Create `/api/admin/modifiers` route (GET, POST, PATCH, DELETE)
-   - Build ModifiersSection component (two groups: Milk, Temperature)
-   - Build ModifierRow component (option name + toggle + edit + delete)
-   - Build ModifierForm modal (add/edit modifier)
-   - Delete confirmation modal (soft delete approach)
-4. **Then Phase 5: Export Section**
+2. **Test Modifiers section** (if not already done)
+   - Open `/admin` → Modifiers tab
+   - Add a new modifier (e.g., "Almond" milk)
+   - Edit an existing modifier name
+   - Toggle a modifier OFF → verify hidden on /order
+3. **Continue `/admin` route — Phase 5: Export Section**
    - Create `/api/admin/export` route (generates CSV)
    - Build ExportSection component (date pickers + download button)
-5. **Finally Phase 6: Polish + iPad Testing**
+4. **Finally Phase 6: Polish + iPad Testing**
 
 **Key Files for Admin:**
+
 - `components/AdminClient.tsx` — Main wrapper, manages state
-- `components/MenuItemsSection.tsx` — Reference for section pattern
-- `app/api/admin/menu-items/route.ts` — Reference for API pattern
+- `components/ModifiersSection.tsx` — Modifiers tab implementation
+- `components/ModifierForm.tsx` — Add/edit modifier modal
+- `app/api/admin/modifiers/route.ts` — Modifiers API (GET, POST, PATCH)
 
 **Blockers:** None
 

@@ -7,10 +7,7 @@ import { supabase } from '@/lib/supabase'
  */
 export async function GET() {
   try {
-    const { data, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      .order('display_order')
+    const { data, error } = await supabase.from('menu_items').select('*').order('display_order')
 
     if (error) throw error
 

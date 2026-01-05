@@ -17,7 +17,11 @@ interface MenuItemsSectionProps {
  *
  * Grouped by category (Signature, Classics)
  */
-export default function MenuItemsSection({ menuItems, modifiers, onUpdate }: MenuItemsSectionProps) {
+export default function MenuItemsSection({
+  menuItems,
+  modifiers,
+  onUpdate,
+}: MenuItemsSectionProps) {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [error, setError] = useState<string | null>(null)
 

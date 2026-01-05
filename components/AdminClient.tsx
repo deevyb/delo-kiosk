@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AdminTabs, { AdminTab } from './AdminTabs'
 import MenuItemsSection from './MenuItemsSection'
+import ModifiersSection from './ModifiersSection'
 import { MenuItem, Modifier } from '@/lib/supabase'
 
 interface AdminClientProps {
@@ -28,13 +29,20 @@ export default function AdminClient({
 
   // Update a menu item in local state (called after API success)
   const handleMenuItemUpdate = (updatedItem: MenuItem) => {
-    setMenuItems((prev) =>
-      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+    setMenuItems((prev) => prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)))
+  }
+
+  // Update a modifier in local state (called after API success)
+  const handleModifierUpdate = (updatedModifier: Modifier) => {
+    setModifiers((prev) =>
+      prev.map((mod) => (mod.id === updatedModifier.id ? updatedModifier : mod))
     )
   }
 
-  // setModifiers will be used in Phase 4
-  void setModifiers
+  // Add a new modifier to local state (called after API success)
+  const handleModifierAdd = (newModifier: Modifier) => {
+    setModifiers((prev) => [...prev, newModifier])
+  }
 
   return (
     <main className="min-h-screen p-8 bg-delo-cream">
@@ -75,14 +83,11 @@ export default function AdminClient({
               )}
 
               {activeTab === 'modifiers' && (
-                <div className="bg-white rounded-xl p-8 border border-delo-navy/10">
-                  <h2 className="font-bricolage font-semibold text-xl text-delo-navy mb-4">
-                    Modifiers
-                  </h2>
-                  <p className="text-delo-navy/60">
-                    Add, edit, or remove milk and temperature options. Coming in Phase 4...
-                  </p>
-                </div>
+                <ModifiersSection
+                  modifiers={modifiers}
+                  onUpdate={handleModifierUpdate}
+                  onAdd={handleModifierAdd}
+                />
               )}
 
               {activeTab === 'export' && (

@@ -62,7 +62,7 @@ export default function PasscodeGate({ onSuccess }: PasscodeGateProps) {
         animate={{
           opacity: 1,
           y: 0,
-          x: shake ? [0, -10, 10, -10, 10, 0] : 0
+          x: shake ? [0, -10, 10, -10, 10, 0] : 0,
         }}
         transition={shake ? { duration: 0.4 } : { type: 'spring', stiffness: 400, damping: 30 }}
         className="w-full max-w-sm"

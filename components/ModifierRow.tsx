@@ -1,55 +1,46 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { MenuItem } from '@/lib/supabase'
+import { Modifier } from '@/lib/supabase'
 
-interface MenuItemCardProps {
-  item: MenuItem
+interface ModifierRowProps {
+  modifier: Modifier
   onToggle: () => void
   onEdit: () => void
 }
 
 /**
- * MenuItemCard - Compact row for a single menu item
+ * ModifierRow - Compact row for a single modifier option
  *
- * Shows: Drink name | modifier info | toggle | edit button
+ * Shows: Option name | active status | toggle | edit button
  */
-export default function MenuItemCard({ item, onToggle, onEdit }: MenuItemCardProps) {
-  const hasMilk = item.modifier_config?.milk ?? false
-  const hasTemp = item.modifier_config?.temperature ?? false
-
-  // Build modifier summary text
-  const modifierParts: string[] = []
-  if (hasMilk) modifierParts.push('Milk')
-  if (hasTemp) modifierParts.push('Temp')
-  const modifierSummary = modifierParts.length > 0 ? modifierParts.join(', ') : 'No modifiers'
-
+export default function ModifierRow({ modifier, onToggle, onEdit }: ModifierRowProps) {
   return (
     <motion.div
       layout
       className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
-        item.is_active
+        modifier.is_active
           ? 'bg-delo-cream/50 border-delo-navy/10'
           : 'bg-delo-navy/5 border-delo-navy/5'
       }`}
     >
-      {/* Left: Name and modifier info */}
+      {/* Left: Name and status */}
       <div className="flex-1 min-w-0">
         <h4
           className={`font-bricolage font-semibold text-lg truncate ${
-            item.is_active ? 'text-delo-navy' : 'text-delo-navy/40'
+            modifier.is_active ? 'text-delo-navy' : 'text-delo-navy/40'
           }`}
         >
-          {item.name}
+          {modifier.option}
         </h4>
-        <p className={`text-sm ${item.is_active ? 'text-delo-navy/50' : 'text-delo-navy/30'}`}>
-          {modifierSummary}
+        <p className={`text-sm ${modifier.is_active ? 'text-delo-navy/50' : 'text-delo-navy/30'}`}>
+          {modifier.is_active ? 'Active' : 'Inactive'}
         </p>
       </div>
 
-      {/* Right: Toggle and Edit */}
+      {/* Right: Edit and Toggle */}
       <div className="flex items-center gap-4 ml-4">
-        {/* Edit button - outline style with fill + border darken on hover */}
+        {/* Edit button */}
         <button
           onClick={onEdit}
           className="px-4 py-2 min-h-[44px] text-sm font-manrope font-semibold text-delo-navy/70 border border-delo-navy/20 hover:bg-delo-navy/5 hover:border-delo-maroon hover:text-delo-maroon rounded-lg transition-all duration-150"
@@ -57,18 +48,18 @@ export default function MenuItemCard({ item, onToggle, onEdit }: MenuItemCardPro
           Edit
         </button>
 
-        {/* Toggle switch - slightly smaller for better proportion */}
+        {/* Toggle switch */}
         <button
           onClick={onToggle}
           className={`relative w-11 h-6 rounded-full transition-colors ${
-            item.is_active ? 'bg-delo-maroon' : 'bg-delo-navy/20'
+            modifier.is_active ? 'bg-delo-maroon' : 'bg-delo-navy/20'
           }`}
-          aria-label={item.is_active ? 'Turn off' : 'Turn on'}
+          aria-label={modifier.is_active ? 'Turn off' : 'Turn on'}
         >
           <motion.div
             layout
             className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-            animate={{ left: item.is_active ? '1.375rem' : '0.25rem' }}
+            animate={{ left: modifier.is_active ? '1.375rem' : '0.25rem' }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           />
         </button>

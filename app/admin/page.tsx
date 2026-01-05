@@ -94,10 +94,7 @@ export default function AdminPage() {
       <div className="min-h-screen flex items-center justify-center bg-delo-cream p-8">
         <div className="text-center max-w-md">
           <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchData}
-            className="btn-primary px-8"
-          >
+          <button onClick={fetchData} className="btn-primary px-8">
             Try Again
           </button>
         </div>

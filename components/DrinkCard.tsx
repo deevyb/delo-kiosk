@@ -77,11 +77,7 @@ export default function DrinkCard({ drink, index, isSelected, onSelect }: DrinkC
           relative w-full aspect-square rounded-xl p-6
           flex flex-col items-center justify-center text-center
           ${isSoldOut ? 'item-unavailable cursor-not-allowed' : ''}
-          ${
-            isSelected && !isSoldOut
-              ? 'border-2 border-delo-maroon'
-              : 'border border-delo-navy/5'
-          }
+          ${isSelected && !isSoldOut ? 'border-2 border-delo-maroon' : 'border border-delo-navy/5'}
           ${!isSoldOut && !isSelected ? 'hover:border-delo-maroon/20' : ''}
         `}
         style={{

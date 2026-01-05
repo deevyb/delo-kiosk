@@ -96,10 +96,7 @@ export default function MenuItemEditor({ item, categories, onSave, onClose }: Me
             <legend className="label-modifier mb-4">Available Options</legend>
             <div className="space-y-3">
               {categories.map((category) => (
-                <label
-                  key={category}
-                  className="flex items-center gap-3 cursor-pointer group"
-                >
+                <label key={category} className="flex items-center gap-3 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={config[category] ?? false}
