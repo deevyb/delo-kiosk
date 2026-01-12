@@ -9,11 +9,11 @@ Save all session progress so the next session can continue seamlessly.
 
 1. **Check git status** — Run `git status` to see what's changed
 
-2. **Update CLAUDE.md** with:
+2. **Update .claude/rules/status.md** with:
    - "Last Updated" date
-   - Current phase/route statuses
-   - "What To Do Next Session" with specific actionable steps
-   - Any decisions made or pending blockers
+   - Current route/feature statuses
+   - "What's Next" with specific actionable steps
+   - Any blockers or pending decisions
 
 3. **Update TECHNICAL.md** (only if schema, API, or architecture changed)
 
@@ -21,8 +21,7 @@ Save all session progress so the next session can continue seamlessly.
 
 ## Output
 
-End with a brief summary table:
-
+End with a brief summary:
 - What was accomplished
 - What's next
 - Any uncommitted changes or blockers

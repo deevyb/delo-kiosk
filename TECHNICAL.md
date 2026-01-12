@@ -368,4 +368,115 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 ---
 
-_Last updated: January 4, 2026 — Health check complete, stats API documented_
+## Design Decisions
+
+### Animation Style
+
+**References:** Superpower.com, Netflix iOS, landonorris.com
+
+**Entrance Animation (Coordinated Fade-Slide):**
+- Custom easing curve: `[0.65, 0.05, 0, 1]` (smooth deceleration)
+- Cards slide up 40px while fading in
+- 70ms stagger between cards
+- Duration: 0.5s
+
+**Press Effect (Press-In):**
+- Scale to 0.97
+- Move down 2px (pressing "into" screen)
+- Shadow reduces on press
+- Spring physics: stiffness 400, damping 30 (minimal bounce)
+
+**Customization Modal (Square-style):**
+- Floating panel over softly dimmed menu grid (no blur)
+- Slide-up + fade-in transition
+- Both X button AND backdrop tap to close
+- Spring physics: stiffness 400, damping 30
+- Corner radius: `rounded-xl` (matches drink cards)
+
+### Typography System
+
+| Element | Font | Weight | Size |
+|---------|------|--------|------|
+| Page title "Delo Coffee" | Yatra One | 400 | 48px (text-5xl) |
+| Category headers | Bricolage | SemiBold | 16px (text-base) |
+| Drink names (cards) | Bricolage | SemiBold | 24px (text-2xl) |
+| Drink name (modal) | Bricolage | Bold | 36px (text-4xl) |
+| Modifier labels | Cooper | Medium | 14px (text-sm) |
+| Modifier buttons | Manrope | SemiBold | 18px (text-lg) |
+| Descriptions | Roboto Mono | Regular | 16px (text-base) |
+
+### Menu Categories
+
+- **Signature:** Elaichi Latte, Ginger Slap Latte, Tubo Latte
+- **Classics:** Latte, Cortado, Macchiato, Espresso
+- Stored in `category` column on `menu_items` table
+
+### Shared CSS Classes (globals.css)
+
+**Text & Labels:**
+- `.label-modifier` — Modifier labels (Milk, Temperature, Your Name)
+- `.text-modifier-option` — Text inside modifier buttons/inputs (Manrope SemiBold 18px)
+- `.text-description` — Small descriptive text
+
+**Buttons:**
+- `.btn-primary` — Maroon submit buttons, h-16 (with disabled state)
+- `.btn-secondary` — Cancel buttons, h-12, gray background
+- `.btn-modal-action` — Modal save/create buttons, h-12, maroon
+- `.btn-admin-add` — Admin "+ Add" buttons with press animation
+
+**Form Elements:**
+- `.input-form` — Standard form input (h-16, rounded-xl)
+- `.select-form` — Dropdown select with same styling
+- `.checkbox-form` — Checkbox input styling
+- `.checkbox-label` — Checkbox row wrapper with hover
+
+**Modal Elements:**
+- `.modal-title` — Modal header (h2, text-2xl, maroon)
+- `.modal-description` — Subtitle text below title
+- `.error-banner` — Error message display
+
+**State:**
+- `.item-unavailable` — 50% opacity for sold-out items
+
+### Shared Modal Component
+
+All form modals use `Modal.tsx`:
+- Backdrop: bg-delo-navy/40, click-to-close
+- Panel: bg-delo-cream, rounded-xl, shadow-2xl, p-8
+- X close button with hover animation
+- Spring animations (stiffness 400, damping 30)
+- Size prop: sm, md, lg
+
+Used by: DrinkCustomizer, NewMenuItemForm, ModifierForm, MenuItemEditor
+
+### Sold-Out Display
+
+Items toggled OFF in admin appear on `/order` with:
+- 50% opacity (faded)
+- "Sold Out" maroon pill badge
+- Tap disabled, cursor not-allowed
+
+### Unavailable Modifier Display
+
+Modifiers toggled OFF appear in customizer modal:
+- Faded button with dashed border
+- "Sold Out" label below (maroon, semibold)
+- Auto-selects first available option if default unavailable
+
+### Visual Direction Options (Explored)
+
+| Option | Name | Feel | Key Features |
+|--------|------|------|--------------|
+| A | The Courtyard | Warm, structured | Category zones with borders, corner ribbons, framed confirmation |
+| B | Playful Pop | Fun, delightful | Drink icons (cardamom, ginger), floating sections, confetti |
+| C | Editorial Elegance | Refined, confident | Left-aligned header, vertical category labels, asymmetric |
+
+All options keep: Brand colors, fonts, existing animations.
+
+### Files with Important Comments
+
+- `components/DrinkCard.tsx` — ANIMATION CONFIGURATION guide and SPRING PHYSICS GUIDE
+
+---
+
+_Last updated: January 11, 2026 — Restructured CLAUDE.md, added Design Decisions_
