@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: January 11, 2026
+> Last Updated: February 11, 2026
 
 ## Current State
 
@@ -8,7 +8,7 @@
 |-------|--------|-------|
 | `/` | Complete | Landing page with navigation |
 | `/order` | Complete | Full ordering flow with confirmation & auto-reset |
-| `/kitchen` | Complete | Real-time barista display + NavMenu |
+| `/kitchen` | Complete | Real-time barista display + NavMenu + instant local state updates |
 | `/admin` | Complete | Passcode + tabs + menu items (with archive) + modifiers + dashboard |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
