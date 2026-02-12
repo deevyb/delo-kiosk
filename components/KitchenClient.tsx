@@ -24,6 +24,12 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   // Active tab
   const [activeTab, setActiveTab] = useState<TabType>('placed')
 
+  // Clear newOrderIds on tab change so realtime orders don't replay entrance animation
+  const handleTabChange = useCallback((tab: TabType) => {
+    setActiveTab(tab)
+    setNewOrderIds(new Set())
+  }, [])
+
   // Realtime connection status
   const [isConnected, setIsConnected] = useState(true)
 
@@ -180,7 +186,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       <div className="px-8 max-w-4xl mx-auto">
         <KitchenTabs
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           placedCount={placedCount}
           readyCount={readyCount}
         />
@@ -211,7 +217,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
             </p>
           </div>
         ) : (
-          <motion.div className="grid grid-cols-2 gap-4" layout>
+          <div key={activeTab} className="grid grid-cols-2 gap-4">
             <AnimatePresence mode="popLayout">
               {currentOrders.map((order) => (
                 <OrderCard
@@ -224,7 +230,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
                 />
               ))}
             </AnimatePresence>
-          </motion.div>
+          </div>
         )}
       </div>
 

@@ -8,7 +8,7 @@
 |-------|--------|-------|
 | `/` | Complete | Landing page with navigation |
 | `/order` | Complete | Full ordering flow with confirmation & auto-reset |
-| `/kitchen` | Complete | Real-time barista display + NavMenu + instant local state updates |
+| `/kitchen` | Complete | Real-time barista display + NavMenu + instant local state updates + polished tab/card animations |
 | `/admin` | Complete | Passcode + tabs + menu items (with archive) + modifiers + dashboard |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
