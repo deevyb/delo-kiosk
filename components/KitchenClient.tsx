@@ -115,7 +115,10 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       if (!response.ok) {
         throw new Error('Failed to update')
       }
-      // Success - realtime will update the UI
+
+      // Update local state immediately instead of waiting for realtime
+      const updatedOrder = await response.json()
+      setOrders((prev) => prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)))
     } catch {
       setError("Couldn't update order. Please try again.")
     } finally {
@@ -141,7 +144,9 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       if (!response.ok) {
         throw new Error('Failed to cancel')
       }
-      // Success - realtime will remove the order
+
+      // Remove from local state immediately instead of waiting for realtime
+      setOrders((prev) => prev.filter((o) => o.id !== orderId))
     } catch {
       setError("Couldn't cancel order. Please try again.")
     } finally {
