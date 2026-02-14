@@ -3,6 +3,7 @@ import KitchenClient from '@/components/KitchenClient'
 
 // Force fresh data on each request
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function getOrders() {
   // Fetch orders with status 'placed' or 'ready' (not canceled)

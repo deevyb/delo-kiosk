@@ -15,6 +15,7 @@
 
 ## Recent Changes (Feb 14)
 
+- **Fix: Kitchen stale data on refresh** — Supabase client now uses `cache: 'no-store'` on all fetch calls to prevent Next.js Data Cache from serving stale order data. Also added `revalidate = 0` to kitchen page. This fixes the bug where "Mark Ready" updated the DB but page refresh reverted orders to "Placed".
 - **Edit item details:** Edit modal now has Name + Description fields above modifier checkboxes. All save together.
 - **Drag-and-drop reorder:** Admin menu items have grip-dot handles. Drag within a category to reorder. Persists to `display_order` column. iPad-friendly (200ms touch delay).
 - **New dependency:** `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
@@ -34,6 +35,10 @@
 | A | The Courtyard | Warm, structured — category zones, corner ribbons |
 | B | Playful Pop | Fun, delightful — drink icons, confetti confirmation |
 | C | Editorial Elegance | Refined, confident — vertical labels, typography-focused |
+
+**After deploy, verify on live server:**
+- Kitchen "Mark Ready" should persist through page refresh
+- Test cancel as well
 
 ## Blockers
 
