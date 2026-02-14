@@ -64,6 +64,7 @@
     /admin
       /stats      # GET: Dashboard statistics
       /menu-items # GET/POST/PATCH: Menu management
+        /reorder  # PUT: Batch update display_order
       /modifiers  # GET/POST/PATCH: Modifier management
       /orders     # GET: Export orders (CSV)
       /verify     # POST: Passcode verification
@@ -170,6 +171,26 @@ interface ModifierOption {
 ```
 
 Uses `force-dynamic` for fresh data on every request.
+
+### PATCH /api/admin/menu-items
+
+Updates a menu item. Accepts any combination of fields:
+- `name` (string, non-empty) — drink name
+- `description` (string | null) — drink description, null to clear
+- `is_active` (boolean) — sold out toggle
+- `is_archived` (boolean) — archive/restore
+- `modifier_config` (object) — which modifier categories apply
+
+### PUT /api/admin/menu-items/reorder
+
+Batch updates `display_order` for drag-and-drop reordering:
+
+```typescript
+// Request body
+{ items: [{ id: string, display_order: number }] }
+
+// Category offsets: Signature = 0+, Classics = 1000+
+```
 
 ---
 

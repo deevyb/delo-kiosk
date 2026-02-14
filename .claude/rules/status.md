@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: February 11, 2026
+> Last Updated: February 14, 2026
 
 ## Current State
 
@@ -9,9 +9,16 @@
 | `/` | Complete | Landing page with navigation |
 | `/order` | Complete | Full ordering flow with confirmation & auto-reset |
 | `/kitchen` | Complete | Real-time barista display + NavMenu + instant local state updates + polished tab/card animations |
-| `/admin` | Complete | Passcode + tabs + menu items (with archive) + modifiers + dashboard |
+| `/admin` | Complete | Passcode + tabs + menu items (edit name/desc, modifiers, archive, drag-to-reorder) + modifiers + dashboard |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
+
+## Recent Changes (Feb 14)
+
+- **Edit item details:** Edit modal now has Name + Description fields above modifier checkboxes. All save together.
+- **Drag-and-drop reorder:** Admin menu items have grip-dot handles. Drag within a category to reorder. Persists to `display_order` column. iPad-friendly (200ms touch delay).
+- **New dependency:** `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+- **New API endpoint:** `PUT /api/admin/menu-items/reorder` for batch display_order updates
 
 ## What's Next
 

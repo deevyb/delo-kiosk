@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json()
-    const { id, is_active, is_archived, modifier_config } = body
+    const { id, name, description, is_active, is_archived, modifier_config } = body
 
     if (!id) {
       return NextResponse.json({ error: 'Item ID required' }, { status: 400 })
@@ -80,6 +80,15 @@ export async function PATCH(request: Request) {
 
     // Build update object with only provided fields
     const updates: Record<string, unknown> = {}
+    if (typeof name === 'string') {
+      if (!name.trim()) {
+        return NextResponse.json({ error: 'Name cannot be empty' }, { status: 400 })
+      }
+      updates.name = name.trim()
+    }
+    if (description !== undefined) {
+      updates.description = description === null || description === '' ? null : description
+    }
     if (typeof is_active === 'boolean') {
       updates.is_active = is_active
     }

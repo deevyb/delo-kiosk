@@ -1,20 +1,30 @@
 'use client'
 
+import { forwardRef } from 'react'
 import { motion } from 'framer-motion'
 import { MenuItem } from '@/lib/supabase'
+import { DraggableAttributes } from '@dnd-kit/core'
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 
 interface MenuItemCardProps {
   item: MenuItem
   onToggle: () => void
   onEdit: () => void
+  dragListeners?: SyntheticListenerMap
+  dragAttributes?: DraggableAttributes
+  isDragging?: boolean
+  style?: React.CSSProperties
 }
 
 /**
  * MenuItemCard - Compact row for a single menu item
  *
- * Shows: Drink name | modifier info | toggle | edit button
+ * Shows: Drag handle (admin) | Drink name | modifier info | toggle | edit button
  */
-export default function MenuItemCard({ item, onToggle, onEdit }: MenuItemCardProps) {
+const MenuItemCard = forwardRef<HTMLDivElement, MenuItemCardProps>(function MenuItemCard(
+  { item, onToggle, onEdit, dragListeners, dragAttributes, isDragging, style },
+  ref
+) {
   const hasMilk = item.modifier_config?.milk ?? false
   const hasTemp = item.modifier_config?.temperature ?? false
 
@@ -26,13 +36,34 @@ export default function MenuItemCard({ item, onToggle, onEdit }: MenuItemCardPro
 
   return (
     <motion.div
-      layout
+      ref={ref}
+      layout={!isDragging}
+      style={style}
       className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
         item.is_active
           ? 'bg-delo-cream/50 border-delo-navy/10'
           : 'bg-delo-navy/5 border-delo-navy/5'
-      }`}
+      } ${isDragging ? 'shadow-lg z-50 relative' : ''}`}
     >
+      {/* Drag handle - only shown in admin when dragListeners provided */}
+      {dragListeners && (
+        <button
+          className="flex items-center justify-center w-8 h-8 -ml-1 mr-2 cursor-grab active:cursor-grabbing touch-none text-delo-navy/30 hover:text-delo-navy/50 transition-colors"
+          {...dragListeners}
+          {...dragAttributes}
+          aria-label="Drag to reorder"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="5" cy="3" r="1.5" />
+            <circle cx="11" cy="3" r="1.5" />
+            <circle cx="5" cy="8" r="1.5" />
+            <circle cx="11" cy="8" r="1.5" />
+            <circle cx="5" cy="13" r="1.5" />
+            <circle cx="11" cy="13" r="1.5" />
+          </svg>
+        </button>
+      )}
+
       {/* Left: Name and modifier info */}
       <div className="flex-1 min-w-0">
         <h4
@@ -75,4 +106,6 @@ export default function MenuItemCard({ item, onToggle, onEdit }: MenuItemCardPro
       </div>
     </motion.div>
   )
-}
+})
+
+export default MenuItemCard

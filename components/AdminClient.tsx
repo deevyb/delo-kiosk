@@ -51,6 +51,11 @@ export default function AdminClient({
     setMenuItems((prev) => [...prev, newItem])
   }
 
+  // Replace full menu items array (used for drag-and-drop reorder)
+  const handleMenuItemsReorder = (reorderedItems: MenuItem[]) => {
+    setMenuItems(reorderedItems)
+  }
+
   return (
     <main className="min-h-screen p-8 bg-delo-cream">
       <div className="max-w-4xl mx-auto">
@@ -82,6 +87,7 @@ export default function AdminClient({
                   modifiers={modifiers}
                   onUpdate={handleMenuItemUpdate}
                   onAdd={handleMenuItemAdd}
+                  onReorder={handleMenuItemsReorder}
                 />
               )}
 
