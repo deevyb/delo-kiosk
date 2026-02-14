@@ -19,6 +19,8 @@
 - **Drag-and-drop reorder:** Admin menu items have grip-dot handles. Drag within a category to reorder. Persists to `display_order` column. iPad-friendly (200ms touch delay).
 - **New dependency:** `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
 - **New API endpoint:** `PUT /api/admin/menu-items/reorder` for batch display_order updates
+- **Removed** "No customization options" message from order flow — unnecessary clutter
+- **Added Americano description** in DB: "Espresso with hot water for a smooth, bold cup"
 
 ## What's Next
 

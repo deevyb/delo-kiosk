@@ -79,9 +79,7 @@ export default function DrinkCustomizer({
             />
           )}
         </div>
-      ) : (
-        <p className="text-description">No customization options for this drink.</p>
-      )}
+      ) : null}
 
       {/* Name input */}
       <div className="mt-8">
