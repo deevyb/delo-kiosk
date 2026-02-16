@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
  * - Popular drinks (top 20)
  * - Modifier preferences with percentages
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Fetch all orders for aggregation
     const { data: orders, error } = await supabase
@@ -22,11 +22,16 @@ export async function GET() {
 
     const allOrders = orders || []
 
-    // Get today's date in YYYY-MM-DD format (UTC)
-    const today = new Date().toISOString().split('T')[0]
+    // Determine "today" in the client's timezone (falls back to America/Los_Angeles)
+    const { searchParams } = new URL(request.url)
+    const timezone = searchParams.get('timezone') || 'America/Los_Angeles'
+    const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: timezone })
+    const today = dateFmt.format(new Date()) // YYYY-MM-DD in client's timezone
 
-    // Filter today's orders
-    const todayOrders = allOrders.filter((o) => o.created_at.startsWith(today))
+    // Filter orders whose created_at falls on "today" in the client's timezone
+    const todayOrders = allOrders.filter(
+      (o) => dateFmt.format(new Date(o.created_at)) === today
+    )
 
     // Count orders by status
     const countByStatus = (orderList: typeof allOrders) => {

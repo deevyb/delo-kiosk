@@ -29,7 +29,8 @@ export default function DashboardSection() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/stats')
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const response = await fetch(`/api/admin/stats?timezone=${encodeURIComponent(tz)}`)
         if (!response.ok) throw new Error('Failed to fetch stats')
         const data = await response.json()
         setStats(data)
