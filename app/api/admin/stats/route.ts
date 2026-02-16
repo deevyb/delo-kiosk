@@ -28,9 +28,17 @@ export async function GET(request: Request) {
     const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: timezone })
     const today = dateFmt.format(new Date()) // YYYY-MM-DD in client's timezone
 
-    // Filter orders whose created_at falls on "today" in the client's timezone
-    const todayOrders = allOrders.filter(
-      (o) => dateFmt.format(new Date(o.created_at)) === today
+    // Use selected date or default to today
+    const targetDate = searchParams.get('date') || today
+
+    // Orders on the target date
+    const targetDateOrders = allOrders.filter(
+      (o) => dateFmt.format(new Date(o.created_at)) === targetDate
+    )
+
+    // Orders up to and including the target date
+    const upToOrders = allOrders.filter(
+      (o) => dateFmt.format(new Date(o.created_at)) <= targetDate
     )
 
     // Count orders by status
@@ -47,9 +55,9 @@ export async function GET(request: Request) {
       )
     }
 
-    // Popular drinks - group by item name, sort by count
+    // Popular drinks - group by item name, sort by count (scoped to target date)
     const drinkCounts: Record<string, number> = {}
-    for (const order of allOrders) {
+    for (const order of targetDateOrders) {
       drinkCounts[order.item] = (drinkCounts[order.item] || 0) + 1
     }
 
@@ -58,10 +66,10 @@ export async function GET(request: Request) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 20)
 
-    // Modifier breakdown - dynamic categories
+    // Modifier breakdown - dynamic categories (scoped to target date)
     const modifierCounts: Record<string, Record<string, number>> = {}
 
-    for (const order of allOrders) {
+    for (const order of targetDateOrders) {
       if (!order.modifiers) continue
 
       for (const [category, option] of Object.entries(order.modifiers)) {
@@ -92,8 +100,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      today: countByStatus(todayOrders),
-      allTime: countByStatus(allOrders),
+      today: countByStatus(targetDateOrders),
+      allTime: countByStatus(upToOrders),
       popularDrinks,
       modifierBreakdown,
     })

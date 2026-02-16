@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { DayPicker } from 'react-day-picker'
+import 'react-day-picker/style.css'
 import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
 
 /**
@@ -18,6 +20,9 @@ export default function DashboardSection() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState('')
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const calendarRef = useRef<HTMLDivElement>(null)
 
   // CSV export state
   const startDateRef = useRef<HTMLInputElement>(null)
@@ -25,15 +30,54 @@ export default function DashboardSection() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch stats on mount
+  // Today's date in YYYY-MM-DD for max attribute and comparison
+  const todayStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }).format(new Date())
+
+  const isViewingToday = !selectedDate || selectedDate === todayStr
+
+  // Format a YYYY-MM-DD date as "Feb 14" (adds year if not current year)
+  const formatDateLabel = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const currentYear = new Date().getFullYear()
+    return year !== currentYear ? `${label}, ${year}` : label
+  }
+
+  // Close calendar on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setCalendarOpen(false)
+      }
+    }
+    if (calendarOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [calendarOpen])
+
+  // Handle day selection
+  const handleDaySelect = useCallback((day: Date | undefined) => {
+    if (!day) return
+    const dateStr = new Intl.DateTimeFormat('en-CA').format(day)
+    setSelectedDate(dateStr === todayStr ? '' : dateStr)
+    setCalendarOpen(false)
+  }, [todayStr])
+
+  // Fetch stats on mount and when selectedDate changes
   useEffect(() => {
     const fetchStats = async () => {
+      setIsLoadingStats(true)
       try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-        const response = await fetch(`/api/admin/stats?timezone=${encodeURIComponent(tz)}`)
+        const params = new URLSearchParams({ timezone: tz })
+        if (selectedDate) params.set('date', selectedDate)
+        const response = await fetch(`/api/admin/stats?${params}`)
         if (!response.ok) throw new Error('Failed to fetch stats')
         const data = await response.json()
         setStats(data)
+        setStatsError(null)
       } catch (err) {
         console.error('Error fetching stats:', err)
         setStatsError('Failed to load statistics')
@@ -42,7 +86,7 @@ export default function DashboardSection() {
       }
     }
     fetchStats()
-  }, [])
+  }, [selectedDate])
 
   // Format date for spreadsheet (ISO format recognized by Google Sheets/Excel)
   const formatDate = (isoString: string): string => {
@@ -145,6 +189,48 @@ export default function DashboardSection() {
 
   return (
     <div className="space-y-6">
+      {/* Date Picker */}
+      <div className="flex items-center justify-end gap-3" ref={calendarRef}>
+        <div className="relative">
+          <button
+            onClick={() => setCalendarOpen(!calendarOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-delo-navy/15 rounded-lg font-manrope text-sm text-delo-navy shadow-sm hover:border-delo-navy/30 transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-delo-navy/40">
+              <path d="M5 1v2M11 1v2M2 6h12M3 3h10a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {isViewingToday ? 'Today' : formatDateLabel(selectedDate)}
+          </button>
+          <AnimatePresence>
+            {calendarOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl border border-delo-navy/10 shadow-lg p-3 delo-calendar"
+              >
+                <DayPicker
+                  mode="single"
+                  selected={selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()}
+                  onSelect={handleDaySelect}
+                  disabled={{ after: new Date() }}
+                  defaultMonth={selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        {!isViewingToday && (
+          <button
+            onClick={() => setSelectedDate('')}
+            className="text-sm font-manrope text-delo-maroon/70 hover:text-delo-maroon transition-colors underline underline-offset-2 decoration-delo-maroon/30"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
       {/* Stats Section */}
       {isLoadingStats ? (
         <StatsLoadingSkeleton />
@@ -161,8 +247,8 @@ export default function DashboardSection() {
         >
           {/* Order Count Cards */}
           <div className="grid grid-cols-2 gap-4">
-            <StatsCard title="Today" counts={stats.today} />
-            <StatsCard title="All Time" counts={stats.allTime} />
+            <StatsCard title={isViewingToday ? 'Today' : formatDateLabel(selectedDate)} counts={stats.today} />
+            <StatsCard title={isViewingToday ? 'All Time' : `Up to ${formatDateLabel(selectedDate)}`} counts={stats.allTime} />
           </div>
 
           {/* Popular Drinks + Modifier Preferences */}

@@ -141,14 +141,18 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
 
 ### GET /api/admin/stats
 
+Query params:
+- `timezone` (string, optional) — IANA timezone for date calculation, defaults to `America/Los_Angeles`
+- `date` (string, optional) — `YYYY-MM-DD` to view stats for a specific date, defaults to today
+
 Returns aggregated dashboard statistics:
 
 ```typescript
 interface DashboardStats {
-  today: OrderCounts      // Orders from today
-  allTime: OrderCounts    // All orders ever
-  popularDrinks: DrinkCount[]  // Top 20 drinks by count
-  modifierBreakdown: Record<string, ModifierOption[]>  // e.g., { milk: [...], temperature: [...] }
+  today: OrderCounts      // Orders on the target date (today or selected date)
+  allTime: OrderCounts    // Orders up to and including the target date
+  popularDrinks: DrinkCount[]  // Top 20 drinks on the target date
+  modifierBreakdown: Record<string, ModifierOption[]>  // Modifier stats for the target date
 }
 
 interface OrderCounts {

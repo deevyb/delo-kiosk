@@ -181,3 +181,56 @@ html {
 .date-input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
+/* Dashboard calendar (react-day-picker) */
+.delo-calendar .rdp-root {
+  --rdp-accent-color: #921C12;
+  --rdp-accent-background-color: #921C12;
+  --rdp-today-color: #C85A2E;
+  --rdp-selected-font: bold;
+  font-family: 'Manrope', sans-serif;
+}
+
+.delo-calendar .rdp-month_caption {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  color: #000024;
+}
+
+.delo-calendar .rdp-weekday {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(0, 0, 36, 0.4);
+}
+
+.delo-calendar .rdp-day button {
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.delo-calendar .rdp-selected .rdp-day_button {
+  background-color: #921C12;
+  color: #F9F6EE;
+  border-radius: 8px;
+}
+
+.delo-calendar .rdp-day:not(.rdp-selected):not(.rdp-disabled):hover .rdp-day_button {
+  background-color: rgba(146, 28, 18, 0.08);
+}
+
+.delo-calendar .rdp-disabled .rdp-day_button {
+  opacity: 0.3;
+}
+
+.delo-calendar .rdp-button_previous,
+.delo-calendar .rdp-button_next {
+  color: #000024;
+  border-radius: 8px;
+}
+
+.delo-calendar .rdp-button_previous:hover,
+.delo-calendar .rdp-button_next:hover {
+  background-color: rgba(0, 0, 36, 0.06);
+}
