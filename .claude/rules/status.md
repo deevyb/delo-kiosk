@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 19, 2026
+> Last Updated: March 19, 2026 (session 2)
 
 ## Current State
 
@@ -30,7 +30,7 @@
 
 | # | Title | Type | Description |
 |---|-------|------|-------------|
-| 1 | Title links to homepage | Quick fix | Make the app title/logo clickable → navigates to `/` |
+| ~~1~~ | ~~Title links to homepage~~ | ~~Quick fix~~ | ~~Done — on branch `claude/plan-backlog-item-cqTKW`, pending merge~~ |
 | 2 | Temp-locked drinks show correct temp on confirmation | Bug | Drinks locked to hot-only or iced-only should display the correct temperature on the confirmation screen |
 | 3 | Ready tab: back-to-progress & cancel | Feature | Kitchen Ready tab gets buttons to move an order back to In Progress or cancel it entirely |
 | 4 | View cancelled orders in kitchen | Feature | New "Cancelled" tab on kitchen display so baristas can see cancelled orders. Pairs with #3 |
@@ -43,10 +43,11 @@
 
 ## Blockers
 
-None currently.
+- **Vercel preview deploys fail** — Supabase env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) likely only set for Production in Vercel. Need to enable for Preview environments too.
 
 ## Changelog
 
+- **Mar 19** — Backlog #1: Title links to homepage (Order, Kitchen, Admin titles wrapped in Link to `/`)
 - **Mar 18** — Fix: Dashboard trends show all-time data when viewing today with 0 orders
 - **Feb 15** — Dashboard date picker for past event stats; fix timezone bug in Today counter
 - **Feb 14** — Kitchen stale data fix; edit item name/desc; drag-to-reorder; Americano description
