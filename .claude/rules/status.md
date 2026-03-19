@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 18, 2026
+> Last Updated: March 19, 2026
 
 ## Current State
 
@@ -12,23 +12,6 @@
 | `/admin` | Complete | Passcode + tabs + menu items (edit name/desc, modifiers, archive, drag-to-reorder) + modifiers + dashboard with date picker |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
-
-## Recent Changes (Mar 18)
-
-- **Fix: Dashboard trends blank on non-event days** — When viewing "Today" with 0 orders, Popular Drinks and Modifier Preferences now show all-time data instead of being blank. Past date views still scope trends to that date only. File changed: `app/api/admin/stats/route.ts`.
-
-## Previous Changes (Feb 15)
-
-- **Dashboard date picker** — Pick any past event date to view that day's stats. Uses `react-day-picker` library styled with Delo brand colors (maroon selected day, Bricolage month header, Manrope day numbers). The stats API accepts an optional `?date=YYYY-MM-DD` param. When a date is selected: first card shows that day's orders, second card shows cumulative orders up to that date, popular drinks and modifier preferences are scoped to that date only. "Reset" link returns to today's view.
-- **Fix: Dashboard "Today" counter timezone bug** — The stats API was computing "today" in UTC, which meant after ~4 PM Pacific the counter thought it was already tomorrow and showed 0 orders. Now the client sends its local timezone to the API, and each order's timestamp is converted to that timezone before comparing.
-
-## Previous Changes (Feb 14)
-
-- **Fix: Kitchen stale data on refresh** — Supabase client uses `cache: 'no-store'` on all fetch calls
-- **Edit item details:** Edit modal with Name + Description fields above modifier checkboxes
-- **Drag-and-drop reorder:** Admin menu items with grip-dot handles, persists to `display_order`
-- **Removed** "No customization options" message from order flow
-- **Added Americano description** in DB
 
 ## What's Next
 
@@ -43,9 +26,30 @@
 | B | Playful Pop | Fun, delightful — drink icons, confetti confirmation |
 | C | Editorial Elegance | Refined, confident — vertical labels, typography-focused |
 
+## Backlog
+
+| # | Title | Type | Description |
+|---|-------|------|-------------|
+| 1 | Title links to homepage | Quick fix | Make the app title/logo clickable → navigates to `/` |
+| 2 | Temp-locked drinks show correct temp on confirmation | Bug | Drinks locked to hot-only or iced-only should display the correct temperature on the confirmation screen |
+| 3 | Ready tab: back-to-progress & cancel | Feature | Kitchen Ready tab gets buttons to move an order back to In Progress or cancel it entirely |
+| 4 | View cancelled orders in kitchen | Feature | New "Cancelled" tab on kitchen display so baristas can see cancelled orders. Pairs with #3 |
+| 5 | Kitchen tabs: default to today's orders | Enhancement | All kitchen tabs (Placed, In Progress, Ready) show only today's orders by default. Small "Show all" toggle to see past events if needed. Keeps kitchen clean during a rush |
+| 6 | Multi-barista workflow | Feature | Two-barista mode via `?barista=` URL param: claim orders, in-progress status, barista identity badges, milk/temp modifier badges. Full spec in `Changes for Multi-Barista Workflow.md` |
+| 7 | Queue position & ETA on confirmation | Feature | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
+| 8 | Mobile compatibility (all screens) | Feature | All routes work on phone-sized screens so baristas can use any device when an iPad isn't available |
+| 9 | Show ingredients on drink card | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too |
+| 10 | Landing page revamp | Design | Redesign the `/` landing page (details TBD — may tie into visual direction choice) |
+
 ## Blockers
 
 None currently.
+
+## Changelog
+
+- **Mar 18** — Fix: Dashboard trends show all-time data when viewing today with 0 orders
+- **Feb 15** — Dashboard date picker for past event stats; fix timezone bug in Today counter
+- **Feb 14** — Kitchen stale data fix; edit item name/desc; drag-to-reorder; Americano description
 
 ## Infrastructure
 
