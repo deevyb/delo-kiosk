@@ -55,9 +55,14 @@ export async function GET(request: Request) {
       )
     }
 
-    // Popular drinks - group by item name, sort by count (scoped to target date)
+    // When viewing today, show all-time trends (so dashboard isn't blank on non-event days).
+    // When viewing a past date, scope trends to that date only.
+    const isViewingToday = targetDate === today
+    const ordersForTrends = isViewingToday ? allOrders : targetDateOrders
+
+    // Popular drinks - group by item name, sort by count
     const drinkCounts: Record<string, number> = {}
-    for (const order of targetDateOrders) {
+    for (const order of ordersForTrends) {
       drinkCounts[order.item] = (drinkCounts[order.item] || 0) + 1
     }
 
@@ -66,10 +71,10 @@ export async function GET(request: Request) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 20)
 
-    // Modifier breakdown - dynamic categories (scoped to target date)
+    // Modifier breakdown - dynamic categories
     const modifierCounts: Record<string, Record<string, number>> = {}
 
-    for (const order of targetDateOrders) {
+    for (const order of ordersForTrends) {
       if (!order.modifiers) continue
 
       for (const [category, option] of Object.entries(order.modifiers)) {
