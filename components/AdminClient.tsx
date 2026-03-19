@@ -7,6 +7,7 @@ import MenuItemsSection from './MenuItemsSection'
 import ModifiersSection from './ModifiersSection'
 import DashboardSection from './DashboardSection'
 import NavMenu from './NavMenu'
+import Link from 'next/link'
 import { MenuItem, Modifier } from '@/lib/supabase'
 
 interface AdminClientProps {
@@ -62,7 +63,7 @@ export default function AdminClient({
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="font-yatra text-4xl text-delo-maroon mb-1">Delo Coffee Admin</h1>
+            <Link href="/" className="cursor-pointer"><h1 className="font-yatra text-4xl text-delo-maroon mb-1">Delo Coffee Admin</h1></Link>
             <p className="text-description">Manage your menu and view orders</p>
           </div>
           <NavMenu onLogout={onLogout} />

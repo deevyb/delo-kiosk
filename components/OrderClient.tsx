@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import Link from 'next/link'
 import { MenuItem, Modifier, Order } from '@/lib/supabase'
 import DrinkCard from './DrinkCard'
 import DrinkCustomizer from './DrinkCustomizer'
@@ -197,7 +198,7 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
       <div className="min-h-screen bg-delo-cream p-8">
         {/* Header */}
         <header className="text-center mb-8">
-          <h1 className="font-yatra text-5xl text-delo-maroon">Delo Coffee</h1>
+          <Link href="/" className="cursor-pointer"><h1 className="font-yatra text-5xl text-delo-maroon">Delo Coffee</h1></Link>
         </header>
 
         {/* Menu by Category */}

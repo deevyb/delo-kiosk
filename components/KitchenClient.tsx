@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import Link from 'next/link'
 import { Order, supabase } from '@/lib/supabase'
 import OrderCard from './OrderCard'
 import KitchenTabs from './KitchenTabs'
@@ -177,7 +178,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       {/* Header */}
       <header className="px-8 pt-8 pb-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <h1 className="font-yatra text-4xl text-delo-maroon">Delo Barista Bar</h1>
+          <Link href="/" className="cursor-pointer"><h1 className="font-yatra text-4xl text-delo-maroon">Delo Barista Bar</h1></Link>
           <NavMenu />
         </div>
       </header>
