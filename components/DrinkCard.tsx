@@ -96,7 +96,7 @@ export default function DrinkCard({ drink, index, isSelected, onSelect }: DrinkC
           </span>
         )}
 
-        <span className="font-bricolage font-semibold text-base md:text-2xl text-delo-navy leading-tight">
+        <span className="font-bricolage font-semibold text-lg md:text-2xl text-delo-navy leading-tight">
           {drink.name}
         </span>
       </motion.button>
