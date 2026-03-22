@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 19, 2026 (session 2)
+> Last Updated: March 21, 2026
 
 ## Current State
 
@@ -15,7 +15,9 @@
 
 ## What's Next
 
-**Visual Personality — Pick a Direction:**
+**Pending merge:** Branch `claude/plan-backlog-item-cqTKW` has backlog #1 (title links to homepage) — tested locally, ready to merge to main.
+
+**After merge — Visual Personality — Pick a Direction:**
 - Three layout options were explored (see TECHNICAL.md § Visual Direction Options)
 - Owner needs to choose one (or mix elements)
 - Then implement the chosen direction
@@ -47,6 +49,7 @@
 
 ## Changelog
 
+- **Mar 21** — Tested backlog #1 branch locally, confirmed ready to merge
 - **Mar 19** — Backlog #1: Title links to homepage (Order, Kitchen, Admin titles wrapped in Link to `/`)
 - **Mar 18** — Fix: Dashboard trends show all-time data when viewing today with 0 orders
 - **Feb 15** — Dashboard date picker for past event stats; fix timezone bug in Today counter
