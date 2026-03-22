@@ -15,9 +15,7 @@
 
 ## What's Next
 
-**Pending merge:** Branch `claude/plan-backlog-item-cqTKW` has backlog #1 (title links to homepage) — tested locally, ready to merge to main.
-
-**After merge — Visual Personality — Pick a Direction:**
+**Visual Personality — Pick a Direction:**
 - Three layout options were explored (see TECHNICAL.md § Visual Direction Options)
 - Owner needs to choose one (or mix elements)
 - Then implement the chosen direction
@@ -32,7 +30,6 @@
 
 | # | Title | Type | Description |
 |---|-------|------|-------------|
-| ~~1~~ | ~~Title links to homepage~~ | ~~Quick fix~~ | ~~Done — on branch `claude/plan-backlog-item-cqTKW`, pending merge~~ |
 | 2 | Temp-locked drinks show correct temp on confirmation | Bug | Drinks locked to hot-only or iced-only should display the correct temperature on the confirmation screen |
 | 3 | Ready tab: back-to-progress & cancel | Feature | Kitchen Ready tab gets buttons to move an order back to In Progress or cancel it entirely |
 | 4 | View cancelled orders in kitchen | Feature | New "Cancelled" tab on kitchen display so baristas can see cancelled orders. Pairs with #3 |
@@ -49,8 +46,7 @@
 
 ## Changelog
 
-- **Mar 21** — Tested backlog #1 branch locally, confirmed ready to merge
-- **Mar 19** — Backlog #1: Title links to homepage (Order, Kitchen, Admin titles wrapped in Link to `/`)
+- **Mar 21** — Merged backlog #1: Title links to homepage (branch cleaned up)
 - **Mar 18** — Fix: Dashboard trends show all-time data when viewing today with 0 orders
 - **Feb 15** — Dashboard date picker for past event stats; fix timezone bug in Today counter
 - **Feb 14** — Kitchen stale data fix; edit item name/desc; drag-to-reorder; Americano description
