@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { Order, OrderStatus, supabase } from '@/lib/supabase'
+import { isToday } from '@/lib/dateUtils'
 import OrderCard from './OrderCard'
 import KitchenTabs from './KitchenTabs'
 import ConnectionStatus from './ConnectionStatus'
@@ -25,6 +26,9 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   // Active tab
   const [activeTab, setActiveTab] = useState<TabType>('placed')
 
+  // Date filter: show only today's orders by default (resets on page load)
+  const [todayOnly, setTodayOnly] = useState(true)
+
   // Clear newOrderIds on tab change so realtime orders don't replay entrance animation
   const handleTabChange = useCallback((tab: TabType) => {
     setActiveTab(tab)
@@ -43,29 +47,34 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   // Error message
   const [error, setError] = useState<string | null>(null)
 
-  // Filter orders by status
+  // Apply date filter once, then split by status
+  const visibleOrders = useMemo(
+    () => (todayOnly ? orders.filter((o) => isToday(o.created_at)) : orders),
+    [orders, todayOnly]
+  )
+
   const placedOrders = useMemo(
     () =>
-      orders
+      visibleOrders
         .filter((o) => o.status === 'placed')
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    [orders]
+    [visibleOrders]
   )
 
   const readyOrders = useMemo(
     () =>
-      orders
+      visibleOrders
         .filter((o) => o.status === 'ready')
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
-    [orders]
+    [visibleOrders]
   )
 
   const canceledOrders = useMemo(
     () =>
-      orders
+      visibleOrders
         .filter((o) => o.status === 'canceled')
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
-    [orders]
+    [visibleOrders]
   )
 
   // Current tab's orders
@@ -220,6 +229,8 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
           placedCount={placedCount}
           readyCount={readyCount}
           cancelledCount={cancelledCount}
+          todayOnly={todayOnly}
+          onTodayOnlyChange={setTodayOnly}
         />
       </div>
 
@@ -244,11 +255,11 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
         {currentOrders.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-roboto-mono text-delo-navy/40 text-lg">
-              {activeTab === 'placed'
-                ? 'No orders waiting'
-                : activeTab === 'ready'
-                  ? 'No orders ready yet'
-                  : 'No cancelled orders'}
+              {{
+                placed:   todayOnly ? 'No orders waiting today'   : 'No orders waiting',
+                ready:    todayOnly ? 'No orders ready today'     : 'No orders ready yet',
+                canceled: todayOnly ? 'No cancelled orders today' : 'No cancelled orders',
+              }[activeTab]}
             </p>
           </div>
         ) : (

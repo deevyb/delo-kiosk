@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Order } from '@/lib/supabase'
+import { isToday, formatShortDate } from '@/lib/dateUtils'
 
 interface OrderCardProps {
   order: Order
@@ -50,10 +51,10 @@ export default function OrderCard({
   }, [])
 
   // Use updated_at for cancelled orders (when it was cancelled), created_at for others
-  const timeAgo = getRelativeTime(
-    order.status === 'canceled' ? order.updated_at : order.created_at,
-    now
-  )
+  const relevantTimestamp = order.status === 'canceled' ? order.updated_at : order.created_at
+  const timeBadge = isToday(relevantTimestamp)
+    ? getRelativeTime(relevantTimestamp, now)
+    : formatShortDate(relevantTimestamp)
 
   // Format modifiers string
   const modifiersText = [order.modifiers?.milk, order.modifiers?.temperature]
@@ -73,7 +74,7 @@ export default function OrderCard({
       <div className="flex items-start justify-between mb-1">
         <h3 className="font-bricolage font-bold text-2xl text-delo-navy">{order.item}</h3>
         <span className="font-roboto-mono text-sm text-delo-navy/50 bg-delo-navy/5 px-2 py-1 rounded flex-shrink-0 ml-2">
-          {timeAgo}
+          {timeBadge}
         </span>
       </div>
 

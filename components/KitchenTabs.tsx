@@ -6,12 +6,24 @@ import { OrderStatus } from '@/lib/supabase'
 
 type MainTab = 'placed' | 'ready'
 
+function DropdownSectionLabel({ label }: { label: string }) {
+  return (
+    <div className="px-4 pt-3 pb-1">
+      <span className="font-cooper text-[10px] uppercase tracking-wider text-delo-navy/40">
+        {label}
+      </span>
+    </div>
+  )
+}
+
 interface KitchenTabsProps {
   activeTab: OrderStatus
   onTabChange: (tab: OrderStatus) => void
   placedCount: number
   readyCount: number
   cancelledCount: number
+  todayOnly: boolean
+  onTodayOnlyChange: (value: boolean) => void
 }
 
 export default function KitchenTabs({
@@ -20,6 +32,8 @@ export default function KitchenTabs({
   placedCount,
   readyCount,
   cancelledCount,
+  todayOnly,
+  onTodayOnlyChange,
 }: KitchenTabsProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
@@ -97,14 +111,16 @@ export default function KitchenTabs({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-delo-navy/10 overflow-hidden z-20 min-w-[180px]"
+              className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-delo-navy/10 overflow-hidden z-20 min-w-[200px]"
             >
+              {/* VIEW section */}
+              <DropdownSectionLabel label="View" />
               <button
                 onClick={() => {
                   onTabChange('canceled')
                   setDropdownOpen(false)
                 }}
-                className={`w-full px-4 py-3 text-left font-manrope font-semibold text-base transition-colors ${
+                className={`w-full px-4 min-h-[44px] flex items-center text-left font-manrope font-semibold text-base transition-colors ${
                   isOverflowActive
                     ? 'text-delo-maroon bg-delo-maroon/5'
                     : 'text-delo-navy/70 hover:bg-delo-navy/5'
@@ -112,6 +128,34 @@ export default function KitchenTabs({
               >
                 <span className="tabular-nums">Cancelled ({cancelledCount})</span>
               </button>
+
+              {/* Divider */}
+              <div className="mx-4 border-t border-delo-navy/10" />
+
+              {/* FILTER section */}
+              <DropdownSectionLabel label="Filter" />
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                role="switch"
+                aria-checked={todayOnly}
+                onClick={() => onTodayOnlyChange(!todayOnly)}
+                className="w-full px-4 min-h-[44px] pb-2 flex items-center justify-between text-left font-manrope font-semibold text-base text-delo-navy/70 hover:bg-delo-navy/5 transition-colors"
+              >
+                <span>Today only</span>
+                {/* Toggle switch */}
+                <div
+                  aria-hidden="true"
+                  className={`w-10 h-[22px] rounded-full relative transition-colors duration-150 ${
+                    todayOnly ? 'bg-delo-maroon' : 'bg-delo-navy/20'
+                  }`}
+                >
+                  <motion.div
+                    className="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm"
+                    animate={{ left: todayOnly ? 21 : 3 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                </div>
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
