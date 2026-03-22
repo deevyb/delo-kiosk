@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { MenuItem, Modifier } from '@/lib/supabase'
 import ModifierSelector from './ModifierSelector'
-import Modal from './Modal'
+import ResponsiveModal from './ResponsiveModal'
 
 interface DrinkCustomizerProps {
   drink: MenuItem
@@ -50,11 +50,15 @@ export default function DrinkCustomizer({
   const hasAnyModifiers = showMilk || showTemperature
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <ResponsiveModal isOpen={isOpen} onClose={onClose} size="lg">
       {/* Drink name and description */}
-      <h1 className="font-bricolage font-bold text-4xl text-delo-maroon pr-12">{drink.name}</h1>
-      {drink.description && <p className="text-description mt-2 mb-8 pr-12">{drink.description}</p>}
-      {!drink.description && <div className="mb-8" />}
+      <h1 className="font-bricolage font-bold text-2xl md:text-4xl text-delo-maroon pr-12">
+        {drink.name}
+      </h1>
+      {drink.description && (
+        <p className="text-description mt-2 mb-4 md:mb-8 pr-12">{drink.description}</p>
+      )}
+      {!drink.description && <div className="mb-4 md:mb-8" />}
 
       {/* Modifier selectors */}
       {hasAnyModifiers ? (
@@ -103,6 +107,6 @@ export default function DrinkCustomizer({
 
       {/* Error message */}
       {error && <p className="text-red-600 text-sm mt-3 text-center">{error}</p>}
-    </Modal>
+    </ResponsiveModal>
   )
 }

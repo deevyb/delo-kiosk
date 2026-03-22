@@ -38,7 +38,7 @@ export default function ModifierSelector({
       <p className="label-modifier mb-3">{categoryLabel}</p>
 
       {/* Button group */}
-      <div className="flex gap-3">
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3">
         {options.map((option) => {
           const isSelected = selected === option.option
           const isUnavailable = !option.is_active
@@ -50,9 +50,9 @@ export default function ModifierSelector({
                 whileTap={isUnavailable ? undefined : { scale: 0.97 }}
                 disabled={isUnavailable}
                 className={`
-                  px-8 py-4 rounded-xl text-modifier-option
+                  px-4 py-3 md:px-8 md:py-4 rounded-xl text-modifier-option
                   transition-colors duration-200
-                  min-w-[120px]
+                  w-full md:w-auto md:min-w-[120px]
                   ${
                     isUnavailable
                       ? 'bg-white/50 text-delo-navy/30 border border-dashed border-delo-navy/15 cursor-not-allowed'

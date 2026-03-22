@@ -46,7 +46,7 @@ export default function SplitQueueLayout({
           Queue ({placedOrders.length})
         </h2>
         {placedOrders.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-8 md:py-12">
             <p className="font-roboto-mono text-delo-navy/40 text-sm">No orders waiting</p>
           </div>
         ) : (
@@ -82,7 +82,7 @@ export default function SplitQueueLayout({
           )
         </h2>
         {inProgressOrders.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-8 md:py-12">
             <p className="font-roboto-mono text-delo-navy/40 text-sm">No drinks in progress</p>
           </div>
         ) : (

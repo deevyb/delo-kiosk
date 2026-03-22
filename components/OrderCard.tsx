@@ -59,10 +59,13 @@ export default function OrderCard({
 
   // Barista highlight: thick left border + tinted background for current barista's orders
   const isMyOrder =
-    isMultiBarista && currentBarista && order.claimed_by === currentBarista && order.status !== 'canceled'
+    isMultiBarista &&
+    currentBarista &&
+    order.claimed_by === currentBarista &&
+    order.status !== 'canceled'
   const showBaristaBadge = isMultiBarista && order.claimed_by && order.status !== 'canceled'
   const baristaColors = isMyOrder ? getBaristaColor(currentBarista!) : null
-  const cardClasses = 'bg-white rounded-xl p-6 shadow-sm border border-delo-navy/5'
+  const cardClasses = 'bg-white rounded-xl p-4 md:p-6 shadow-sm border border-delo-navy/5'
 
   const cardStyle = isMyOrder ? { borderLeft: `6px solid ${baristaColors!.hex}` } : undefined
 
@@ -79,7 +82,9 @@ export default function OrderCard({
     >
       {/* Top row: Drink name, time badge, and barista badge */}
       <div className="flex items-start justify-between mb-1">
-        <h3 className="font-bricolage font-bold text-2xl text-delo-navy">{order.item}</h3>
+        <h3 className="font-bricolage font-bold text-xl md:text-2xl text-delo-navy">
+          {order.item}
+        </h3>
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
           {showBaristaBadge && <BaristaBadge name={order.claimed_by!} />}
           <span className="font-roboto-mono text-sm text-delo-navy/50 bg-delo-navy/5 px-2 py-1 rounded">
@@ -96,7 +101,7 @@ export default function OrderCard({
 
       {/* Placed (or in_progress in solo mode): Mark Ready + Cancel, Multi = Mark In Progress + Cancel */}
       {(order.status === 'placed' || (order.status === 'in_progress' && !isMultiBarista)) && (
-        <div className="flex gap-3 mt-5">
+        <div className="flex gap-2 mt-3 md:gap-3 md:mt-5">
           {isMultiBarista && onMarkInProgress ? (
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -129,7 +134,7 @@ export default function OrderCard({
 
       {/* In Progress (multi-barista only): Mark Ready (full width) on top, secondary row below */}
       {order.status === 'in_progress' && isMultiBarista && (
-        <div className="mt-5 space-y-2">
+        <div className="mt-3 md:mt-5 space-y-2">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => onMarkReady(order.id)}
@@ -163,7 +168,7 @@ export default function OrderCard({
 
       {/* Ready: Badge + Back to Queue/Placed + Cancel */}
       {order.status === 'ready' && (
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-3 md:mt-5 flex flex-wrap items-center gap-2 md:gap-3">
           <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg">
             <svg
               className="w-4 h-4"
@@ -176,7 +181,7 @@ export default function OrderCard({
             </svg>
             <span className="font-manrope font-semibold text-sm">Ready</span>
           </div>
-          <div className="flex gap-3 ml-auto">
+          <div className="flex gap-2 md:gap-3 ml-auto">
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => onBackToPlaced?.(order.id)}
@@ -199,7 +204,7 @@ export default function OrderCard({
 
       {/* Cancelled: Badge + Restore button in one row */}
       {order.status === 'canceled' && (
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-3 md:mt-5 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg">
             <svg
               className="w-4 h-4"

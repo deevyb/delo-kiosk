@@ -11,6 +11,7 @@ import KitchenTabs from './KitchenTabs'
 import ConnectionStatus from './ConnectionStatus'
 import NavMenu from './NavMenu'
 import SplitQueueLayout from './SplitQueueLayout'
+import ResponsiveModal from './ResponsiveModal'
 
 interface KitchenClientProps {
   initialOrders: Order[]
@@ -262,8 +263,8 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    */
   const handleCancel = useCallback(
     async (orderId: string) => {
-      setConfirmCancel(null) // Close modal
       await updateOrderStatus(orderId, 'canceled', "Couldn't cancel order. Please try again.")
+      setConfirmCancel(null)
     },
     [updateOrderStatus]
   )
@@ -283,17 +284,17 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       <ConnectionStatus isConnected={isConnected} />
 
       {/* Header */}
-      <header className="px-8 pt-8 pb-4">
+      <header className="px-4 pt-4 pb-2 md:px-8 md:pt-8 md:pb-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <Link href="/" className="cursor-pointer">
-            <h1 className="font-yatra text-4xl text-delo-maroon">Delo Barista Bar</h1>
+            <h1 className="font-yatra text-2xl md:text-4xl text-delo-maroon">Delo Barista Bar</h1>
           </Link>
           <NavMenu />
         </div>
       </header>
 
       {/* Tabs */}
-      <div className="px-8 max-w-4xl mx-auto">
+      <div className="px-4 md:px-8 max-w-4xl mx-auto">
         <KitchenTabs
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -312,7 +313,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       <AnimatePresence>
         {error && (
           <motion.div
-            className="px-8 max-w-4xl mx-auto mt-4"
+            className="px-4 md:px-8 max-w-4xl mx-auto mt-4"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -325,7 +326,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       </AnimatePresence>
 
       {/* Order list */}
-      <div className="px-8 py-6 max-w-4xl mx-auto">
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-4xl mx-auto">
         {/* Multi-barista split layout for the Queue tab */}
         {isMultiBarista && activeTab === 'placed' ? (
           <SplitQueueLayout
@@ -343,7 +344,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
             newOrderIds={newOrderIds}
           />
         ) : currentOrders.length === 0 ? (
-          <div className="text-center py-16">
+          <div className="text-center py-8 md:py-16">
             <p className="font-roboto-mono text-delo-navy/40 text-lg">
               {
                 {
@@ -356,7 +357,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
             </p>
           </div>
         ) : (
-          <div key={activeTab} className="grid grid-cols-2 gap-4">
+          <div key={activeTab} className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <AnimatePresence mode="popLayout">
               {currentOrders.map((order) => (
                 <OrderCard
@@ -379,56 +380,34 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       </div>
 
       {/* Cancel confirmation modal */}
-      <AnimatePresence>
+      <ResponsiveModal
+        isOpen={!!confirmCancel}
+        onClose={() => setConfirmCancel(null)}
+        title="Cancel this order?"
+        size="sm"
+      >
         {confirmCancel && (
           <>
-            {/* Backdrop */}
-            <motion.div
-              className="fixed inset-0 bg-delo-navy/30 z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setConfirmCancel(null)}
-            />
-            {/* Modal */}
-            <motion.div
-              className="fixed inset-0 flex items-center justify-center z-50 p-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="bg-white rounded-xl p-8 shadow-xl max-w-sm w-full"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            <p className="font-manrope text-delo-navy/70 mb-6">
+              {confirmCancel.customer_name}&apos;s {confirmCancel.item}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmCancel(null)}
+                className="btn-kitchen-secondary flex-1"
               >
-                <h2 className="font-bricolage font-bold text-2xl text-delo-navy mb-2">
-                  Cancel this order?
-                </h2>
-                <p className="font-manrope text-delo-navy/70 mb-6">
-                  {confirmCancel.customer_name}&apos;s {confirmCancel.item}
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setConfirmCancel(null)}
-                    className="btn-kitchen-secondary flex-1"
-                  >
-                    Keep Order
-                  </button>
-                  <button
-                    onClick={() => handleCancel(confirmCancel.id)}
-                    className="flex-1 py-3 px-4 rounded-lg bg-red-600 text-white font-manrope font-semibold transition-colors hover:bg-red-700"
-                  >
-                    Yes, Cancel
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
+                Keep Order
+              </button>
+              <button
+                onClick={() => handleCancel(confirmCancel.id)}
+                className="flex-1 py-3 px-4 rounded-lg bg-red-600 text-white font-manrope font-semibold transition-colors hover:bg-red-700 min-h-[44px]"
+              >
+                Yes, Cancel
+              </button>
+            </div>
           </>
         )}
-      </AnimatePresence>
+      </ResponsiveModal>
     </div>
   )
 }

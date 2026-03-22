@@ -65,7 +65,7 @@ html {
 
 /* Primary action button (maroon) */
 .btn-primary {
-  @apply h-16 rounded-xl font-bricolage font-semibold text-xl uppercase tracking-wide;
+  @apply h-14 md:h-16 rounded-xl font-bricolage font-semibold text-lg md:text-xl uppercase tracking-wide;
   @apply bg-delo-maroon text-delo-cream;
   @apply transition-colors;
 }
@@ -91,7 +91,7 @@ html {
 
 /* Modal title (h2) */
 .modal-title {
-  @apply font-bricolage font-bold text-2xl text-delo-maroon pr-12 mb-2;
+  @apply font-bricolage font-bold text-xl md:text-2xl text-delo-maroon pr-12 mb-2;
 }
 
 /* Modal description text */
@@ -101,13 +101,13 @@ html {
 
 /* Standard form input */
 .input-form {
-  @apply w-full h-16 px-6 text-modifier-option text-delo-navy bg-white rounded-xl;
+  @apply w-full h-14 md:h-16 px-4 md:px-6 text-modifier-option text-delo-navy bg-white rounded-xl;
   @apply border border-delo-navy/10 focus:border-delo-maroon focus:outline-none transition-colors;
 }
 
 /* Form select dropdown */
 .select-form {
-  @apply w-full h-16 px-6 pr-12 text-modifier-option text-delo-navy bg-white rounded-xl;
+  @apply w-full h-14 md:h-16 px-4 md:px-6 pr-12 text-modifier-option text-delo-navy bg-white rounded-xl;
   @apply border border-delo-navy/10 focus:border-delo-maroon focus:outline-none transition-colors;
   @apply appearance-none cursor-pointer;
 }
@@ -130,7 +130,7 @@ html {
 
 /* Kitchen order card action button (primary - maroon) */
 .btn-kitchen-action {
-  @apply flex-1 py-3 px-4 rounded-lg min-h-[52px];
+  @apply flex-1 py-3 px-4 rounded-lg min-h-[44px] md:min-h-[52px];
   @apply bg-delo-maroon text-delo-cream;
   @apply font-manrope font-semibold;
   @apply transition-colors hover:bg-delo-maroon/90;
@@ -139,7 +139,7 @@ html {
 
 /* Kitchen order card secondary button (gray) */
 .btn-kitchen-secondary {
-  @apply py-3 px-4 rounded-lg min-h-[52px];
+  @apply py-3 px-4 rounded-lg min-h-[44px] md:min-h-[52px];
   @apply bg-delo-navy/10 text-delo-navy;
   @apply font-manrope font-semibold;
   @apply transition-colors hover:bg-delo-navy/15;

@@ -66,7 +66,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
       {/* Dots/Grid Icon Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-delo-navy/5 transition-colors"
+        className="p-2.5 md:p-2 rounded-lg hover:bg-delo-navy/5 transition-colors"
         aria-label="Navigation menu"
         aria-expanded={isOpen}
       >

@@ -44,3 +44,6 @@ next-env.d.ts
 # Obsidian (local notes)
 .obsidian
 .env*.local
+
+# Superpowers brainstorming mockups
+.superpowers

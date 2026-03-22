@@ -197,16 +197,16 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
   return (
     <>
       {/* Menu grid - always visible behind modal */}
-      <div className="min-h-screen bg-delo-cream p-8">
+      <div className="min-h-screen bg-delo-cream p-4 md:p-8">
         {/* Header */}
-        <header className="text-center mb-8">
+        <header className="text-center mb-6 md:mb-8">
           <Link href="/" className="cursor-pointer">
-            <h1 className="font-yatra text-5xl text-delo-maroon">Delo Coffee</h1>
+            <h1 className="font-yatra text-3xl md:text-5xl text-delo-maroon">Delo Coffee</h1>
           </Link>
         </header>
 
         {/* Menu by Category */}
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
           {groupedMenu.map(({ category, items }) => (
             <section key={category}>
               {/* Category header */}
@@ -215,7 +215,7 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
               </h2>
 
               {/* Drink grid */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
                 {items.map((drink) => {
                   const index = runningIndex++
                   return (
@@ -281,11 +281,11 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
 
               <p className="text-description text-delo-navy/60 mb-6">On it!</p>
 
-              <h1 className="font-bricolage font-bold text-4xl text-delo-navy mb-4">
+              <h1 className="font-bricolage font-bold text-2xl md:text-4xl text-delo-navy mb-4">
                 {submittedOrder.customer_name}
               </h1>
 
-              <p className="font-bricolage font-semibold text-2xl text-delo-navy">
+              <p className="font-bricolage font-semibold text-lg md:text-2xl text-delo-navy">
                 {submittedOrder.item}
               </p>
 

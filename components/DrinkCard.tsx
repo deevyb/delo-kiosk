@@ -74,7 +74,7 @@ export default function DrinkCard({ drink, index, isSelected, onSelect }: DrinkC
               }
         }
         className={`
-          relative w-full aspect-square rounded-xl p-6
+          relative w-full aspect-square rounded-xl p-3 md:p-6
           flex flex-col items-center justify-center text-center
           ${isSoldOut ? 'item-unavailable cursor-not-allowed' : ''}
           ${isSelected && !isSoldOut ? 'border-2 border-delo-maroon' : 'border border-delo-navy/5'}
@@ -96,7 +96,7 @@ export default function DrinkCard({ drink, index, isSelected, onSelect }: DrinkC
           </span>
         )}
 
-        <span className="font-bricolage font-semibold text-2xl text-delo-navy leading-tight">
+        <span className="font-bricolage font-semibold text-base md:text-2xl text-delo-navy leading-tight">
           {drink.name}
         </span>
       </motion.button>

@@ -108,7 +108,7 @@ export default function KitchenTabs({
               onTabChange(tab.id)
               setDropdownOpen(false)
             }}
-            className={`relative flex-1 py-3 px-6 rounded-lg font-manrope font-semibold text-base transition-colors min-h-[52px] ${
+            className={`relative flex-1 py-2 px-3 md:py-3 md:px-6 rounded-lg font-manrope font-semibold text-sm md:text-base transition-colors min-h-[44px] md:min-h-[52px] ${
               activeTab === tab.id
                 ? 'text-delo-maroon'
                 : 'text-delo-navy/50 hover:text-delo-navy/70'
@@ -136,7 +136,7 @@ export default function KitchenTabs({
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => setDropdownOpen((prev) => !prev)}
-          className={`w-[52px] h-[52px] rounded-xl flex items-center justify-center font-bold text-xl transition-colors ${
+          className={`w-[44px] h-[44px] md:w-[52px] md:h-[52px] rounded-xl flex items-center justify-center font-bold text-xl transition-colors ${
             isOverflowActive
               ? 'bg-white text-delo-maroon shadow-sm'
               : 'bg-delo-navy/5 text-delo-navy/40 hover:text-delo-navy/60'
@@ -153,7 +153,7 @@ export default function KitchenTabs({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-delo-navy/10 overflow-hidden z-20 min-w-[200px]"
+              className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-delo-navy/10 overflow-hidden z-20 min-w-[160px] md:min-w-[200px]"
             >
               {/* VIEW section */}
               <DropdownSectionLabel label="View" />
