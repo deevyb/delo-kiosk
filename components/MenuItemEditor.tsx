@@ -8,7 +8,12 @@ import Modal from './Modal'
 interface MenuItemEditorProps {
   item: MenuItem
   categories: string[]
-  onSave: (updates: { name: string; description: string | null; modifier_config: Record<string, boolean>; default_modifiers: Record<string, string | null> }) => void
+  onSave: (updates: {
+    name: string
+    description: string | null
+    modifier_config: Record<string, boolean>
+    default_modifiers: Record<string, string | null>
+  }) => void
   onRemove: () => void
   onClose: () => void
   isOpen: boolean
@@ -67,7 +72,9 @@ export default function MenuItemEditor({
       modifier_config: config,
       default_modifiers: {
         ...item.default_modifiers,
-        temperature: config.temperature ? (item.default_modifiers?.temperature ?? null) : lockedTemp,
+        temperature: config.temperature
+          ? (item.default_modifiers?.temperature ?? null)
+          : lockedTemp,
         milk: config.milk ? (item.default_modifiers?.milk ?? null) : null,
       },
     })
@@ -136,7 +143,9 @@ export default function MenuItemEditor({
                       className="overflow-hidden"
                     >
                       <div className="ml-7 mt-2 flex items-center gap-2">
-                        <span className="font-manrope text-sm text-delo-navy/60">Always served as:</span>
+                        <span className="font-manrope text-sm text-delo-navy/60">
+                          Always served as:
+                        </span>
                         {['Hot', 'Iced'].map((temp) => (
                           <motion.button
                             key={temp}

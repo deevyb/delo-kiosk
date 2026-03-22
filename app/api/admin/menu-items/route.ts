@@ -72,7 +72,8 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json()
-    const { id, name, description, is_active, is_archived, modifier_config, default_modifiers } = body
+    const { id, name, description, is_active, is_archived, modifier_config, default_modifiers } =
+      body
 
     if (!id) {
       return NextResponse.json({ error: 'Item ID required' }, { status: 400 })

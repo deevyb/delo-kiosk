@@ -31,13 +31,7 @@ const sizeClasses = {
  *   <form>...</form>
  * </Modal>
  */
-export default function Modal({
-  isOpen,
-  onClose,
-  title,
-  size = 'lg',
-  children,
-}: ModalProps) {
+export default function Modal({ isOpen, onClose, title, size = 'lg', children }: ModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (

@@ -38,7 +38,5 @@ export function isToday(timestamp: string): boolean {
 export function formatShortDate(timestamp: string): string {
   const date = new Date(timestamp)
   const isSameYear = date.getFullYear() === new Date().getFullYear()
-  return isSameYear
-    ? shortDateFormatter.format(date)
-    : shortDateWithYearFormatter.format(date)
+  return isSameYear ? shortDateFormatter.format(date) : shortDateWithYearFormatter.format(date)
 }

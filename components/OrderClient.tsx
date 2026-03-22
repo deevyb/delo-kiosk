@@ -91,9 +91,9 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
     // Use defaults if available, otherwise fall back to first available option
     // Only set milk if the drink has milk enabled — otherwise omit entirely
     const selectedMilk = drink.modifier_config?.milk
-      ? (defaultMilk && isModifierAvailable('milk', defaultMilk)
-          ? defaultMilk
-          : getFirstAvailableOption('milk'))
+      ? defaultMilk && isModifierAvailable('milk', defaultMilk)
+        ? defaultMilk
+        : getFirstAvailableOption('milk')
       : undefined
 
     const selectedTemp =
@@ -200,7 +200,9 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
       <div className="min-h-screen bg-delo-cream p-8">
         {/* Header */}
         <header className="text-center mb-8">
-          <Link href="/" className="cursor-pointer"><h1 className="font-yatra text-5xl text-delo-maroon">Delo Coffee</h1></Link>
+          <Link href="/" className="cursor-pointer">
+            <h1 className="font-yatra text-5xl text-delo-maroon">Delo Coffee</h1>
+          </Link>
         </header>
 
         {/* Menu by Category */}

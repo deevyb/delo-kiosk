@@ -26,10 +26,7 @@ export async function PUT(request: Request) {
 
     // Update all items in parallel
     const updates = items.map((item: { id: string; display_order: number }) =>
-      supabase
-        .from('menu_items')
-        .update({ display_order: item.display_order })
-        .eq('id', item.id)
+      supabase.from('menu_items').update({ display_order: item.display_order }).eq('id', item.id)
     )
 
     const results = await Promise.all(updates)
@@ -37,7 +34,10 @@ export async function PUT(request: Request) {
     // Check for errors
     const errors = results.filter((r) => r.error)
     if (errors.length > 0) {
-      console.error('Reorder errors:', errors.map((e) => e.error))
+      console.error(
+        'Reorder errors:',
+        errors.map((e) => e.error)
+      )
       return NextResponse.json({ error: 'Failed to reorder some items' }, { status: 500 })
     }
 

@@ -70,13 +70,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
         aria-label="Navigation menu"
         aria-expanded={isOpen}
       >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="text-delo-navy/70"
-        >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-delo-navy/70">
           {/* 3x3 Grid of dots */}
           <circle cx="6" cy="6" r="2" fill="currentColor" />
           <circle cx="12" cy="6" r="2" fill="currentColor" />

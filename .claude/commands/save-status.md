@@ -22,6 +22,7 @@ Save all session progress so the next session can continue seamlessly.
 ## Output
 
 End with a brief summary:
+
 - What was accomplished
 - What's next
 - Any uncommitted changes or blockers

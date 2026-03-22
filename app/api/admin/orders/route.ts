@@ -12,10 +12,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    let query = supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+    let query = supabase.from('orders').select('*').order('created_at', { ascending: false })
 
     // Apply date filters if provided
     if (startDate) {

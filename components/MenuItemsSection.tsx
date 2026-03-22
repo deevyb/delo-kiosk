@@ -11,7 +11,12 @@ import {
   useSensors,
   DragEndEvent,
 } from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { MenuItem, Modifier } from '@/lib/supabase'
 import MenuItemCard from './MenuItemCard'
@@ -123,7 +128,12 @@ export default function MenuItemsSection({
 
   const handleSaveItem = async (
     item: MenuItem,
-    updates: { name: string; description: string | null; modifier_config: Record<string, boolean>; default_modifiers: Record<string, string | null> }
+    updates: {
+      name: string
+      description: string | null
+      modifier_config: Record<string, boolean>
+      default_modifiers: Record<string, string | null>
+    }
   ) => {
     setError(null)
 
@@ -191,7 +201,11 @@ export default function MenuItemsSection({
   // Category offsets so global display_order stays correct across categories
   const CATEGORY_OFFSETS: Record<string, number> = { Signature: 0, Classics: 1000 }
 
-  const handleDragEnd = async (event: DragEndEvent, categoryItems: MenuItem[], category: string) => {
+  const handleDragEnd = async (
+    event: DragEndEvent,
+    categoryItems: MenuItem[],
+    category: string
+  ) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
@@ -209,9 +223,7 @@ export default function MenuItemsSection({
     }))
 
     // Optimistic update — replace the category's items in the full list
-    const otherItems = menuItems.filter(
-      (item) => item.category !== category || item.is_archived
-    )
+    const otherItems = menuItems.filter((item) => item.category !== category || item.is_archived)
     onReorder(
       [...otherItems, ...updatedCategoryItems].sort(
         (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
@@ -251,7 +263,10 @@ export default function MenuItemsSection({
           collisionDetection={closestCenter}
           onDragEnd={(event) => handleDragEnd(event, items, title)}
         >
-          <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={items.map((item) => item.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
               {items.map((item) => (
                 <SortableMenuItemCard

@@ -5,6 +5,7 @@
 **Owner:** Non-technical founder who knows exactly what they want — and wants to understand what's being built.
 
 **Communication Rules:**
+
 - Explain technical concepts in plain, accessible language
 - Focus on meaningful learning moments, not every tiny choice
 - When a decision has real trade-offs, share options, implications, and your recommendation
@@ -15,15 +16,14 @@
 
 ## The Business
 
-**Delo Coffee** runs pop-up coffee events 1-2 times per month, serving 100-150 customers per event. The app replaces paper order cards that get lost or shuffled.
-
-**The Solution:** iPad-based ordering where customers tap their order, it appears instantly on the kitchen display, and nothing gets lost.
+**Delo Coffee** — pop-up coffee events, 100-150 customers/event. iPad kiosk replaces paper order cards.
 
 ---
 
 ## The Brand
 
 Inspired by the _delo_ — a traditional Indian courtyard where strangers become friends.
+
 - **Warm & cozy** — like being welcomed into someone's home
 - **Playful** — not stuffy or pretentious
 - **Heritage-rooted** — honors tradition without being dated
@@ -37,6 +37,7 @@ Inspired by the _delo_ — a traditional Indian courtyard where strangers become
 ## Critical Requirements
 
 **Must-Haves:**
+
 - Stability above all — biggest fear is crashes/freezes during rush
 - Beautiful, silky animations (Framer Motion throughout)
 - Real-time sync — orders appear instantly on kitchen display
@@ -49,29 +50,41 @@ Inspired by the _delo_ — a traditional Indian courtyard where strangers become
 
 ## Success Criteria
 
-1. Get through next pop-up with zero lost orders
-2. App never crashes or freezes during the rush
-3. Customers find it intuitive (no explanation needed)
-4. Looks and feels like a natural extension of Delo's brand
-5. Every interaction feels smooth and polished
+Zero lost orders. No crashes during rush. Intuitive with no explanation needed. On-brand and silky smooth.
 
 ---
 
-## Specialized Plugins
+## Skill Usage (MANDATORY)
 
-### `/frontend-design`
-For building new screens where visual creativity matters, or exploring multiple design directions.
+**Check this table before starting any task. If a trigger matches, invoke the skill — do not wait to be asked.**
 
-### `/feature-dev`
-For major features that touch many files or require understanding the whole system.
+| Trigger                                           | Skill                          | When                                 |
+| ------------------------------------------------- | ------------------------------ | ------------------------------------ |
+| New UI, screens, or visual direction              | `/frontend-design`             | Before writing UI code               |
+| UI polish (animations, hover, shadows)            | `/make-interfaces-feel-better` | After UI code, before review         |
+| Editing TSX/JSX components                        | `/react-best-practices`        | After all component edits            |
+| Feature touching 3+ files, new routes, DB changes | `/feature-dev`                 | Before starting implementation       |
+| Any code changes                                  | `/simplify`                    | After implementation, before testing |
+| Planning multi-step work                          | `/brainstorm`                  | Before writing any plan              |
+| Editing CLAUDE.md                                 | `/revise-claude-md`            | Before making changes                |
+
+**Do NOT skip skills.** Don't rationalize ("it's simple enough"). If a trigger matches, invoke it. If unsure, invoke it — checking is cheaper than missing.
 
 ---
 
 ## Reference Documents
 
-| File | Purpose |
-|------|---------|
-| `TECHNICAL.md` | Architecture, schema, API, design decisions |
-| `.claude/rules/status.md` | Current status and next tasks (auto-loaded) |
-| `Delo Coffee Ordering App – MVP Spec.md` | Functional requirements |
-| `Delo Coffee Brand Identity.md` | Brand story and voice |
+| File                                     | Purpose                                     |
+| ---------------------------------------- | ------------------------------------------- |
+| `TECHNICAL.md`                           | Architecture, schema, API, design decisions |
+| `.claude/rules/status.md`                | Current status and next tasks (auto-loaded) |
+| `Delo Coffee Ordering App – MVP Spec.md` | Functional requirements                     |
+| `Delo Coffee Brand Identity.md`          | Brand story and voice                       |
+
+---
+
+## Commands
+
+- `npm run dev` — local dev server
+- `npm run build` — production build
+- `npm run format` — Prettier
