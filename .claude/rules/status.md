@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 21, 2026
+> Last Updated: March 21, 2026 (session 2)
 
 ## Current State
 
@@ -15,7 +15,14 @@
 
 ## What's Next
 
-**Visual Personality — Pick a Direction:**
+**Immediate: Owner testing for backlog #2** — Temp-lock and milk-hide changes are coded and reviewed. Owner needs to test before commit:
+1. Admin: toggle temp OFF → pick Hot/Iced → Save → reopen to verify
+2. Order a temp-locked drink → confirmation shows locked temp
+3. Order a milk-disabled drink → confirmation shows NO milk (no "Regular")
+4. Kitchen: verify both cases show correctly
+5. Re-enable toggles → verify normal behavior restored
+
+**Then: Visual Personality — Pick a Direction:**
 - Three layout options were explored (see TECHNICAL.md § Visual Direction Options)
 - Owner needs to choose one (or mix elements)
 - Then implement the chosen direction
@@ -30,7 +37,7 @@
 
 | # | Title | Type | Description |
 |---|-------|------|-------------|
-| 2 | Temp-locked drinks show correct temp on confirmation | Bug | Drinks locked to hot-only or iced-only should display the correct temperature on the confirmation screen |
+| 2 | ~~Temp-locked drinks show correct temp on confirmation~~ | Done | Admin can lock temp + milk hidden when disabled. Awaiting owner test before commit |
 | 3 | Ready tab: back-to-progress & cancel | Feature | Kitchen Ready tab gets buttons to move an order back to In Progress or cancel it entirely |
 | 4 | View cancelled orders in kitchen | Feature | New "Cancelled" tab on kitchen display so baristas can see cancelled orders. Pairs with #3 |
 | 5 | Kitchen tabs: default to today's orders | Enhancement | All kitchen tabs (Placed, In Progress, Ready) show only today's orders by default. Small "Show all" toggle to see past events if needed. Keeps kitchen clean during a rush |
@@ -46,6 +53,7 @@
 
 ## Changelog
 
+- **Mar 21** — Backlog #2: Temp-locked drinks show correct temp; milk hidden when disabled (awaiting owner test)
 - **Mar 21** — Merged backlog #1: Title links to homepage (branch cleaned up)
 - **Mar 18** — Fix: Dashboard trends show all-time data when viewing today with 0 orders
 - **Feb 15** — Dashboard date picker for past event stats; fix timezone bug in Today counter

@@ -8,7 +8,7 @@ import Modal from './Modal'
 interface MenuItemEditorProps {
   item: MenuItem
   categories: string[]
-  onSave: (updates: { name: string; description: string | null; modifier_config: Record<string, boolean> }) => void
+  onSave: (updates: { name: string; description: string | null; modifier_config: Record<string, boolean>; default_modifiers: Record<string, string | null> }) => void
   onRemove: () => void
   onClose: () => void
   isOpen: boolean
@@ -41,10 +41,15 @@ export default function MenuItemEditor({
     })
     return initial
   })
+  const [lockedTemp, setLockedTemp] = useState<string | null>(
+    item.default_modifiers?.temperature ?? null
+  )
   const [isSaving, setIsSaving] = useState(false)
   const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   const nameIsValid = name.trim().length > 0
+  const tempNeedsLocked = categories.includes('temperature') && !config.temperature && !lockedTemp
+  const canSave = nameIsValid && !tempNeedsLocked
 
   const handleToggle = (category: string) => {
     setConfig((prev) => ({
@@ -54,12 +59,17 @@ export default function MenuItemEditor({
   }
 
   const handleSave = async () => {
-    if (!nameIsValid) return
+    if (!canSave) return
     setIsSaving(true)
     await onSave({
       name: name.trim(),
       description: description.trim() || null,
       modifier_config: config,
+      default_modifiers: {
+        ...item.default_modifiers,
+        temperature: config.temperature ? (item.default_modifiers?.temperature ?? null) : lockedTemp,
+        milk: config.milk ? (item.default_modifiers?.milk ?? null) : null,
+      },
     })
     setIsSaving(false)
   }
@@ -105,15 +115,54 @@ export default function MenuItemEditor({
         <legend className="label-modifier mb-4">Available Options</legend>
         <div className="space-y-3">
           {categories.map((category) => (
-            <label key={category} className="checkbox-label group">
-              <input
-                type="checkbox"
-                checked={config[category] ?? false}
-                onChange={() => handleToggle(category)}
-                className="checkbox-form"
-              />
-              <span>{formatCategoryName(category)}</span>
-            </label>
+            <div key={category}>
+              <label className="checkbox-label group">
+                <input
+                  type="checkbox"
+                  checked={config[category] ?? false}
+                  onChange={() => handleToggle(category)}
+                  className="checkbox-form"
+                />
+                <span>{formatCategoryName(category)}</span>
+              </label>
+              {category === 'temperature' && (
+                <AnimatePresence>
+                  {!config.temperature && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="ml-7 mt-2 flex items-center gap-2">
+                        <span className="font-manrope text-sm text-delo-navy/60">Always served as:</span>
+                        {['Hot', 'Iced'].map((temp) => (
+                          <motion.button
+                            key={temp}
+                            type="button"
+                            onClick={() => setLockedTemp(temp)}
+                            whileTap={{ scale: 0.97 }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-manrope font-semibold transition-colors ${
+                              lockedTemp === temp
+                                ? 'bg-delo-maroon text-delo-cream'
+                                : 'bg-white text-delo-navy border border-delo-navy/20 hover:border-delo-navy/40'
+                            }`}
+                          >
+                            {temp}
+                          </motion.button>
+                        ))}
+                      </div>
+                      {tempNeedsLocked && (
+                        <p className="ml-7 mt-1.5 font-manrope text-xs text-delo-maroon/70">
+                          Pick which temperature this drink is always served as
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+            </div>
           ))}
         </div>
       </fieldset>
@@ -129,9 +178,9 @@ export default function MenuItemEditor({
         </button>
         <motion.button
           onClick={handleSave}
-          disabled={isSaving || !nameIsValid}
+          disabled={isSaving || !canSave}
           whileTap={{ scale: 0.97 }}
-          className={`btn-modal-action flex-1 ${!nameIsValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`btn-modal-action flex-1 ${!canSave ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSaving ? 'Saving...' : 'Save'}
         </motion.button>

@@ -89,10 +89,12 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
     const defaultTemp = drink.default_modifiers?.temperature
 
     // Use defaults if available, otherwise fall back to first available option
-    const selectedMilk =
-      defaultMilk && isModifierAvailable('milk', defaultMilk)
-        ? defaultMilk
-        : getFirstAvailableOption('milk')
+    // Only set milk if the drink has milk enabled — otherwise omit entirely
+    const selectedMilk = drink.modifier_config?.milk
+      ? (defaultMilk && isModifierAvailable('milk', defaultMilk)
+          ? defaultMilk
+          : getFirstAvailableOption('milk'))
+      : undefined
 
     const selectedTemp =
       defaultTemp && isModifierAvailable('temperature', defaultTemp)
@@ -100,7 +102,7 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
         : getFirstAvailableOption('temperature')
 
     setSelectedModifiers({
-      milk: selectedMilk,
+      ...(selectedMilk && { milk: selectedMilk }),
       temperature: selectedTemp,
     })
 

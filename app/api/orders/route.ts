@@ -27,8 +27,8 @@ export async function POST(request: Request) {
     const finalModifiers = { ...(modifiers || {}) }
     if (menuItem?.default_modifiers && menuItem?.modifier_config) {
       for (const [category, defaultValue] of Object.entries(menuItem.default_modifiers)) {
-        // Only apply default if: category is enabled AND no value was provided
-        if (menuItem.modifier_config[category] && !finalModifiers[category] && defaultValue) {
+        // Apply default if no value was provided (covers both enabled and locked categories)
+        if (!finalModifiers[category] && defaultValue) {
           finalModifiers[category] = defaultValue
         }
       }

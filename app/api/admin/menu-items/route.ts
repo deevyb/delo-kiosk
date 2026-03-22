@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json()
-    const { id, name, description, is_active, is_archived, modifier_config } = body
+    const { id, name, description, is_active, is_archived, modifier_config, default_modifiers } = body
 
     if (!id) {
       return NextResponse.json({ error: 'Item ID required' }, { status: 400 })
@@ -97,6 +97,9 @@ export async function PATCH(request: Request) {
     }
     if (modifier_config !== undefined) {
       updates.modifier_config = modifier_config
+    }
+    if (default_modifiers !== undefined) {
+      updates.default_modifiers = default_modifiers
     }
 
     if (Object.keys(updates).length === 0) {

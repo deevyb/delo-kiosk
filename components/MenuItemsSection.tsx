@@ -123,7 +123,7 @@ export default function MenuItemsSection({
 
   const handleSaveItem = async (
     item: MenuItem,
-    updates: { name: string; description: string | null; modifier_config: Record<string, boolean> }
+    updates: { name: string; description: string | null; modifier_config: Record<string, boolean>; default_modifiers: Record<string, string | null> }
   ) => {
     setError(null)
 
@@ -136,6 +136,7 @@ export default function MenuItemsSection({
           name: updates.name,
           description: updates.description,
           modifier_config: updates.modifier_config,
+          default_modifiers: updates.default_modifiers,
         }),
       })
 

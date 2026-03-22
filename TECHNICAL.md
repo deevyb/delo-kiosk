@@ -184,6 +184,7 @@ Updates a menu item. Accepts any combination of fields:
 - `is_active` (boolean) — sold out toggle
 - `is_archived` (boolean) — archive/restore
 - `modifier_config` (object) — which modifier categories apply
+- `default_modifiers` (object) — default/locked values per category (e.g., `{ temperature: "Iced", milk: null }`)
 
 ### PUT /api/admin/menu-items/reorder
 
