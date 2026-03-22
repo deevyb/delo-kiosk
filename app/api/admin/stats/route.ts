@@ -37,9 +37,7 @@ export async function GET(request: Request) {
     )
 
     // Orders up to and including the target date
-    const upToOrders = allOrders.filter(
-      (o) => dateFmt.format(new Date(o.created_at)) <= targetDate
-    )
+    const upToOrders = allOrders.filter((o) => dateFmt.format(new Date(o.created_at)) <= targetDate)
 
     // Count orders by status
     const countByStatus = (orderList: typeof allOrders) => {
@@ -47,11 +45,12 @@ export async function GET(request: Request) {
         (acc, order) => {
           acc.total++
           if (order.status === 'placed') acc.placed++
+          else if (order.status === 'in_progress') acc.in_progress++
           else if (order.status === 'ready') acc.ready++
           else if (order.status === 'canceled') acc.canceled++
           return acc
         },
-        { total: 0, placed: 0, ready: 0, canceled: 0 }
+        { total: 0, placed: 0, in_progress: 0, ready: 0, canceled: 0 }
       )
     }
 

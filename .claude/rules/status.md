@@ -1,14 +1,14 @@
 # Project Status
 
-> Last Updated: March 22, 2026 (session 4)
+> Last Updated: March 22, 2026 (session 5)
 
 ## Current State
 
 | Route | Status | Notes |
-|-------|--------|-------|
+| ---------- | -------- | --- |
 | `/` | Complete | Landing page with navigation |
 | `/order` | Complete | Full ordering flow with confirmation & auto-reset |
-| `/kitchen` | Complete | Real-time barista display + NavMenu + Ready tab actions + Cancelled tab via overflow menu + Restore + Today-only filter (default) with toggle in overflow menu |
+| `/kitchen` | Complete | Real-time barista display + NavMenu + Ready/Cancelled tabs + Today-only filter + **Multi-barista mode** (`?barista=name`): split Queue/In Progress layout, claim orders, barista badges, modifier badges, "My drinks only" filter |
 | `/admin` | Complete | Passcode + tabs + menu items (edit name/desc, modifiers, archive, drag-to-reorder) + modifiers + dashboard with date picker |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
@@ -17,26 +17,23 @@
 
 | # | Title | Type | Description |
 |---|-------|------|-------------|
-| 2 | ~~Temp-locked drinks show correct temp on confirmation~~ | Done | Admin can lock temp + milk hidden when disabled |
-| 3 | ~~Ready tab: back-to-placed & cancel~~ | Done | Ready cards show badge + Back to Placed & Cancel buttons; all status transitions allowed |
-| 4 | ~~View cancelled orders in kitchen~~ | Done | Cancelled tab behind overflow menu (⋯) with Restore button; auto-switches to Placed on restore |
-| 5 | ~~Kitchen tabs: default to today's orders~~ | Done | Today-only filter in overflow menu with toggle switch; past orders show date badge (e.g. "Feb 6"); tab counts match filter |
-| 6 | Multi-barista workflow | Feature | Two-barista mode via `?barista=` URL param: claim orders, in-progress status, barista identity badges, milk/temp modifier badges. Full spec in `Changes for Multi-Barista Workflow.md` |
-| 7 | Queue position & ETA on confirmation | Feature | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
-| 8 | Mobile compatibility (all screens) | Feature | All routes work on phone-sized screens so baristas can use any device when an iPad isn't available |
-| 9 | Show ingredients on drink card | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too |
-| 10 | Landing page revamp | Design | Redesign the `/` landing page (details TBD — may tie into visual direction choice) |
+| 1 | Prep time badge on Ready tab | Enhancement | Ready tab shows elapsed prep time (in-progress → ready) on today's orders instead of a date badge, e.g. "2m 30s". Past orders continue showing the date. |
+| 2 | Mobile compatibility (all screens) | Feature | All routes work on phone-sized screens so baristas can use any device when an iPad isn't available |
+| 3 | Queue position & ETA on confirmation | Feature | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
+| 4 | Show ingredients on drink card | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too |
+| 5 | Landing page revamp | Design | Redesign the `/` landing page (details TBD — may tie into visual direction choice) |
 
 ## Blockers
 
-- **Vercel preview deploys fail** — Supabase env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) likely only set for Production in Vercel. Need to enable for Preview environments too.
+None.
 
 ## Changelog
 
-- **Mar 22** — Backlog #5: Kitchen defaults to today's orders with toggle in overflow menu; past orders show date badges
-- **Mar 21** — Backlog #3 + #4: Ready tab actions (Back to Placed, Cancel) + Cancelled tab with overflow menu and Restore
-- **Mar 21** — Backlog #2: Temp-locked drinks show correct temp; milk hidden when disabled
-- **Mar 21** — Merged backlog #1: Title links to homepage (branch cleaned up)
+- **Mar 22** — Multi-barista workflow: split Queue/In Progress layout, `?barista=` URL param, claim orders (Mark In Progress), barista identity badges (3-char, auto-color), modifier badges (Oat/Regular/Hot/Iced), "My drinks only" toggle, stacked button layout for in-progress cards, solo mode unchanged
+- **Mar 22** — Kitchen defaults to today's orders with toggle in overflow menu; past orders show date badges
+- **Mar 21** — Ready tab actions (Back to Placed, Cancel) + Cancelled tab with overflow menu and Restore
+- **Mar 21** — Temp-locked drinks show correct temp; milk hidden when disabled
+- **Mar 21** — Title links to homepage (branch cleaned up)
 - **Mar 18** — Fix: Dashboard trends show all-time data when viewing today with 0 orders
 - **Feb 15** — Dashboard date picker for past event stats; fix timezone bug in Today counter
 - **Feb 14** — Kitchen stale data fix; edit item name/desc; drag-to-reorder; Americano description
@@ -48,3 +45,4 @@
 - Supabase: Database ready, menu seeded (7 drinks), realtime enabled
 - Code Quality: Prettier, ESLint, Error Boundary, shared CSS classes
 - Dependencies: react-day-picker (dashboard calendar)
+- DB Schema: orders table has `in_progress` status + `claimed_by` column (added session 5)

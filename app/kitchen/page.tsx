@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { supabase, Order } from '@/lib/supabase'
 import KitchenClient from '@/components/KitchenClient'
 
@@ -6,11 +7,11 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 async function getOrders() {
-  // Fetch all orders (placed, ready, and canceled)
+  // Fetch all orders (placed, in_progress, ready, and canceled)
   const { data: orders, error } = await supabase
     .from('orders')
     .select('*')
-    .in('status', ['placed', 'ready', 'canceled'])
+    .in('status', ['placed', 'in_progress', 'ready', 'canceled'])
     .order('created_at', { ascending: true })
 
   if (error) {
@@ -24,5 +25,9 @@ async function getOrders() {
 export default async function KitchenPage() {
   const orders = await getOrders()
 
-  return <KitchenClient initialOrders={orders} />
+  return (
+    <Suspense>
+      <KitchenClient initialOrders={orders} />
+    </Suspense>
+  )
 }

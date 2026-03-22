@@ -12,7 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 // Types for our database tables
-export type OrderStatus = 'placed' | 'ready' | 'canceled'
+export type OrderStatus = 'placed' | 'in_progress' | 'ready' | 'canceled'
 
 export interface MenuItem {
   id: string
@@ -48,6 +48,7 @@ export interface Order {
     temperature?: string
   }
   status: OrderStatus
+  claimed_by: string | null
   created_at: string
   updated_at: string
 }
@@ -56,6 +57,7 @@ export interface Order {
 export interface OrderCounts {
   total: number
   placed: number
+  in_progress: number
   ready: number
   canceled: number
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { Order, OrderStatus, supabase } from '@/lib/supabase'
@@ -9,6 +10,7 @@ import OrderCard from './OrderCard'
 import KitchenTabs from './KitchenTabs'
 import ConnectionStatus from './ConnectionStatus'
 import NavMenu from './NavMenu'
+import SplitQueueLayout from './SplitQueueLayout'
 
 interface KitchenClientProps {
   initialOrders: Order[]
@@ -17,6 +19,11 @@ interface KitchenClientProps {
 type TabType = OrderStatus
 
 export default function KitchenClient({ initialOrders }: KitchenClientProps) {
+  // Multi-barista mode: detect via URL param
+  const searchParams = useSearchParams()
+  const baristaName = searchParams.get('barista') || ''
+  const isMultiBarista = baristaName.length > 0
+
   // All orders (placed, ready, and canceled)
   const [orders, setOrders] = useState<Order[]>(initialOrders)
 
@@ -28,6 +35,9 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
 
   // Date filter: show only today's orders by default (resets on page load)
   const [todayOnly, setTodayOnly] = useState(true)
+
+  // Multi-barista: show only my in-progress drinks by default
+  const [myDrinksOnly, setMyDrinksOnly] = useState(true)
 
   // Clear newOrderIds on tab change so realtime orders don't replay entrance animation
   const handleTabChange = useCallback((tab: TabType) => {
@@ -47,17 +57,35 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   // Error message
   const [error, setError] = useState<string | null>(null)
 
+  // Shared clock for relative time display (1 timer instead of N per card)
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Apply date filter once, then split by status
   const visibleOrders = useMemo(
     () => (todayOnly ? orders.filter((o) => isToday(o.created_at)) : orders),
     [orders, todayOnly]
   )
 
+  // Unclaimed orders (status = placed). In solo mode, fold in_progress into placed
+  // so orders from a prior multi-barista session aren't invisible.
   const placedOrders = useMemo(
     () =>
       visibleOrders
-        .filter((o) => o.status === 'placed')
+        .filter((o) => o.status === 'placed' || (!isMultiBarista && o.status === 'in_progress'))
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    [visibleOrders, isMultiBarista]
+  )
+
+  // In-progress orders (claimed, multi-barista only)
+  const inProgressOrders = useMemo(
+    () =>
+      visibleOrders
+        .filter((o) => o.status === 'in_progress')
+        .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()),
     [visibleOrders]
   )
 
@@ -77,18 +105,30 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
     [visibleOrders]
   )
 
-  // Current tab's orders
-  const currentOrders =
-    activeTab === 'placed'
-      ? placedOrders
-      : activeTab === 'ready'
-        ? readyOrders
-        : canceledOrders
+  // Current tab's orders (memoized for referential stability)
+  const currentOrders = useMemo(() => {
+    const map: Record<OrderStatus, Order[]> = {
+      placed: placedOrders,
+      in_progress: inProgressOrders,
+      ready: readyOrders,
+      canceled: canceledOrders,
+    }
+    return map[activeTab]
+  }, [placedOrders, inProgressOrders, readyOrders, canceledOrders, activeTab])
 
-  // Counts for tabs
-  const placedCount = placedOrders.length
+  // Counts for tabs — Queue count includes both placed + in_progress
+  const placedCount = placedOrders.length + inProgressOrders.length
   const readyCount = readyOrders.length
   const cancelledCount = canceledOrders.length
+
+  // Filtered in-progress orders for multi-barista "mine only" toggle
+  const displayedInProgressOrders = useMemo(
+    () =>
+      myDrinksOnly && isMultiBarista
+        ? inProgressOrders.filter((o) => o.claimed_by === baristaName)
+        : inProgressOrders,
+    [inProgressOrders, myDrinksOnly, isMultiBarista, baristaName]
+  )
 
   /**
    * Realtime subscription for order updates
@@ -135,7 +175,12 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    * Update an order's status via API and optimistically update local state
    */
   const updateOrderStatus = useCallback(
-    async (orderId: string, newStatus: OrderStatus, errorMessage: string) => {
+    async (
+      orderId: string,
+      newStatus: OrderStatus,
+      errorMessage: string,
+      extraFields?: Record<string, unknown>
+    ) => {
       setUpdatingOrderId(orderId)
       setError(null)
 
@@ -143,7 +188,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
         const response = await fetch(`/api/orders/${orderId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify({ status: newStatus, ...extraFields }),
         })
 
         if (!response.ok) {
@@ -165,7 +210,8 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    * Mark an order as ready
    */
   const handleMarkReady = useCallback(
-    (orderId: string) => updateOrderStatus(orderId, 'ready', "Couldn't update order. Please try again."),
+    (orderId: string) =>
+      updateOrderStatus(orderId, 'ready', "Couldn't update order. Please try again."),
     [updateOrderStatus]
   )
 
@@ -173,7 +219,30 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    * Move a ready order back to placed
    */
   const handleBackToPlaced = useCallback(
-    (orderId: string) => updateOrderStatus(orderId, 'placed', "Couldn't move order back. Please try again."),
+    (orderId: string) =>
+      updateOrderStatus(orderId, 'placed', "Couldn't move order back. Please try again."),
+    [updateOrderStatus]
+  )
+
+  /**
+   * Mark an order as in-progress (multi-barista: claim it)
+   */
+  const handleMarkInProgress = useCallback(
+    (orderId: string) =>
+      updateOrderStatus(orderId, 'in_progress', "Couldn't claim order. Please try again.", {
+        claimed_by: baristaName,
+      }),
+    [updateOrderStatus, baristaName]
+  )
+
+  /**
+   * Un-claim: move an in-progress order back to placed
+   */
+  const handleBackToQueue = useCallback(
+    (orderId: string) =>
+      updateOrderStatus(orderId, 'placed', "Couldn't unclaim order. Please try again.", {
+        claimed_by: null,
+      }),
     [updateOrderStatus]
   )
 
@@ -216,7 +285,9 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       {/* Header */}
       <header className="px-8 pt-8 pb-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <Link href="/" className="cursor-pointer"><h1 className="font-yatra text-4xl text-delo-maroon">Delo Barista Bar</h1></Link>
+          <Link href="/" className="cursor-pointer">
+            <h1 className="font-yatra text-4xl text-delo-maroon">Delo Barista Bar</h1>
+          </Link>
           <NavMenu />
         </div>
       </header>
@@ -231,6 +302,9 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
           cancelledCount={cancelledCount}
           todayOnly={todayOnly}
           onTodayOnlyChange={setTodayOnly}
+          isMultiBarista={isMultiBarista}
+          myDrinksOnly={myDrinksOnly}
+          onMyDrinksOnlyChange={setMyDrinksOnly}
         />
       </div>
 
@@ -252,14 +326,33 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
 
       {/* Order list */}
       <div className="px-8 py-6 max-w-4xl mx-auto">
-        {currentOrders.length === 0 ? (
+        {/* Multi-barista split layout for the Queue tab */}
+        {isMultiBarista && activeTab === 'placed' ? (
+          <SplitQueueLayout
+            placedOrders={placedOrders}
+            inProgressOrders={displayedInProgressOrders}
+            totalInProgressCount={inProgressOrders.length}
+            myDrinksOnly={myDrinksOnly}
+            baristaName={baristaName}
+            now={now}
+            onMarkReady={handleMarkReady}
+            onMarkInProgress={handleMarkInProgress}
+            onBackToQueue={handleBackToQueue}
+            onCancelClick={(order) => setConfirmCancel(order)}
+            updatingOrderId={updatingOrderId}
+            newOrderIds={newOrderIds}
+          />
+        ) : currentOrders.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-roboto-mono text-delo-navy/40 text-lg">
-              {{
-                placed:   todayOnly ? 'No orders waiting today'   : 'No orders waiting',
-                ready:    todayOnly ? 'No orders ready today'     : 'No orders ready yet',
-                canceled: todayOnly ? 'No cancelled orders today' : 'No cancelled orders',
-              }[activeTab]}
+              {
+                {
+                  placed: todayOnly ? 'No orders waiting today' : 'No orders waiting',
+                  in_progress: todayOnly ? 'No orders in progress today' : 'No orders in progress',
+                  ready: todayOnly ? 'No orders ready today' : 'No orders ready yet',
+                  canceled: todayOnly ? 'No cancelled orders today' : 'No cancelled orders',
+                }[activeTab]
+              }
             </p>
           </div>
         ) : (
@@ -269,12 +362,15 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
                 <OrderCard
                   key={order.id}
                   order={order}
+                  now={now}
                   onMarkReady={handleMarkReady}
                   onBackToPlaced={handleBackToPlaced}
                   onRestore={handleRestore}
                   onCancelClick={() => setConfirmCancel(order)}
                   isUpdating={updatingOrderId === order.id}
                   isNew={newOrderIds.has(order.id)}
+                  isMultiBarista={isMultiBarista}
+                  currentBarista={baristaName}
                 />
               ))}
             </AnimatePresence>
@@ -317,7 +413,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setConfirmCancel(null)}
-                    className="flex-1 py-3 px-4 rounded-lg bg-delo-navy/10 text-delo-navy font-manrope font-semibold transition-colors hover:bg-delo-navy/15"
+                    className="btn-kitchen-secondary flex-1"
                   >
                     Keep Order
                   </button>

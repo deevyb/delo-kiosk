@@ -117,7 +117,8 @@ CREATE TABLE orders (
   customer_name TEXT NOT NULL,
   item TEXT NOT NULL,
   modifiers JSONB DEFAULT '{}',
-  status TEXT NOT NULL DEFAULT 'placed' CHECK (status IN ('placed', 'ready', 'canceled')),
+  status TEXT NOT NULL DEFAULT 'placed' CHECK (status IN ('placed', 'in_progress', 'ready', 'canceled')),
+  claimed_by TEXT DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -133,7 +134,8 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
 - `modifier_config` on menu_items controls which modifier categories apply to each drink
 - `modifiers` JSONB on orders stores selected choices: `{"milk": "Oat", "temperature": "Iced"}`
 - Denormalized item name in orders for simplicity and historical accuracy
-- Status enum: `placed`, `ready`, `canceled` — all transitions allowed (any → any)
+- Status enum: `placed`, `in_progress`, `ready`, `canceled` — all transitions allowed
+- `claimed_by` (nullable text) tracks which barista claimed an order in multi-barista mode (`/kitchen?barista=name`)
 
 ---
 
@@ -142,6 +144,7 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
 ### GET /api/admin/stats
 
 Query params:
+
 - `timezone` (string, optional) — IANA timezone for date calculation, defaults to `America/Los_Angeles`
 - `date` (string, optional) — `YYYY-MM-DD` to view stats for a specific date, defaults to today
 
@@ -149,15 +152,16 @@ Returns aggregated dashboard statistics:
 
 ```typescript
 interface DashboardStats {
-  today: OrderCounts      // Orders on the target date (today or selected date)
-  allTime: OrderCounts    // Orders up to and including the target date
-  popularDrinks: DrinkCount[]  // Top 20 drinks on the target date
-  modifierBreakdown: Record<string, ModifierOption[]>  // Modifier stats for the target date
+  today: OrderCounts // Orders on the target date (today or selected date)
+  allTime: OrderCounts // Orders up to and including the target date
+  popularDrinks: DrinkCount[] // Top 20 drinks on the target date
+  modifierBreakdown: Record<string, ModifierOption[]> // Modifier stats for the target date
 }
 
 interface OrderCounts {
   total: number
   placed: number
+  in_progress: number
   ready: number
   canceled: number
 }
@@ -168,9 +172,9 @@ interface DrinkCount {
 }
 
 interface ModifierOption {
-  option: string      // e.g., "Oat"
-  count: number       // raw count
-  percentage: number  // 0-100
+  option: string // e.g., "Oat"
+  count: number // raw count
+  percentage: number // 0-100
 }
 ```
 
@@ -179,6 +183,7 @@ Uses `force-dynamic` for fresh data on every request.
 ### PATCH /api/admin/menu-items
 
 Updates a menu item. Accepts any combination of fields:
+
 - `name` (string, non-empty) — drink name
 - `description` (string | null) — drink description, null to clear
 - `is_active` (boolean) — sold out toggle
@@ -192,7 +197,9 @@ Batch updates `display_order` for drag-and-drop reordering:
 
 ```typescript
 // Request body
-{ items: [{ id: string, display_order: number }] }
+{
+  items: [{ id: string, display_order: number }]
+}
 
 // Category offsets: Signature = 0+, Classics = 1000+
 ```
@@ -402,18 +409,21 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 **References:** Superpower.com, Netflix iOS, landonorris.com
 
 **Entrance Animation (Coordinated Fade-Slide):**
+
 - Custom easing curve: `[0.65, 0.05, 0, 1]` (smooth deceleration)
 - Cards slide up 40px while fading in
 - 70ms stagger between cards
 - Duration: 0.5s
 
 **Press Effect (Press-In):**
+
 - Scale to 0.97
 - Move down 2px (pressing "into" screen)
 - Shadow reduces on press
 - Spring physics: stiffness 400, damping 30 (minimal bounce)
 
 **Customization Modal (Square-style):**
+
 - Floating panel over softly dimmed menu grid (no blur)
 - Slide-up + fade-in transition
 - Both X button AND backdrop tap to close
@@ -422,15 +432,15 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 ### Typography System
 
-| Element | Font | Weight | Size |
-|---------|------|--------|------|
-| Page title "Delo Coffee" | Yatra One | 400 | 48px (text-5xl) |
-| Category headers | Bricolage | SemiBold | 16px (text-base) |
-| Drink names (cards) | Bricolage | SemiBold | 24px (text-2xl) |
-| Drink name (modal) | Bricolage | Bold | 36px (text-4xl) |
-| Modifier labels | Cooper | Medium | 14px (text-sm) |
-| Modifier buttons | Manrope | SemiBold | 18px (text-lg) |
-| Descriptions | Roboto Mono | Regular | 16px (text-base) |
+| Element                  | Font        | Weight   | Size             |
+| ------------------------ | ----------- | -------- | ---------------- |
+| Page title "Delo Coffee" | Yatra One   | 400      | 48px (text-5xl)  |
+| Category headers         | Bricolage   | SemiBold | 16px (text-base) |
+| Drink names (cards)      | Bricolage   | SemiBold | 24px (text-2xl)  |
+| Drink name (modal)       | Bricolage   | Bold     | 36px (text-4xl)  |
+| Modifier labels          | Cooper      | Medium   | 14px (text-sm)   |
+| Modifier buttons         | Manrope     | SemiBold | 18px (text-lg)   |
+| Descriptions             | Roboto Mono | Regular  | 16px (text-base) |
 
 ### Menu Categories
 
@@ -441,33 +451,39 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 ### Shared CSS Classes (globals.css)
 
 **Text & Labels:**
+
 - `.label-modifier` — Modifier labels (Milk, Temperature, Your Name)
 - `.text-modifier-option` — Text inside modifier buttons/inputs (Manrope SemiBold 18px)
 - `.text-description` — Small descriptive text
 
 **Buttons:**
+
 - `.btn-primary` — Maroon submit buttons, h-16 (with disabled state)
 - `.btn-secondary` — Cancel buttons, h-12, gray background
 - `.btn-modal-action` — Modal save/create buttons, h-12, maroon
 - `.btn-admin-add` — Admin "+ Add" buttons with press animation
 
 **Form Elements:**
+
 - `.input-form` — Standard form input (h-16, rounded-xl)
 - `.select-form` — Dropdown select with same styling
 - `.checkbox-form` — Checkbox input styling
 - `.checkbox-label` — Checkbox row wrapper with hover
 
 **Modal Elements:**
+
 - `.modal-title` — Modal header (h2, text-2xl, maroon)
 - `.modal-description` — Subtitle text below title
 - `.error-banner` — Error message display
 
 **State:**
+
 - `.item-unavailable` — 50% opacity for sold-out items
 
 ### Shared Modal Component
 
 All form modals use `Modal.tsx`:
+
 - Backdrop: bg-delo-navy/40, click-to-close
 - Panel: bg-delo-cream, rounded-xl, shadow-2xl, p-8
 - X close button with hover animation
@@ -480,11 +496,11 @@ Used by: DrinkCustomizer, NewMenuItemForm, ModifierForm, MenuItemEditor
 
 Two separate states for menu items:
 
-| State | Customer sees | Admin sees |
-|-------|--------------|------------|
-| `is_active=true, is_archived=false` | Normal drink | Toggle on |
-| `is_active=false, is_archived=false` | "Sold Out" | Toggle off |
-| `is_archived=true` | Hidden entirely | In collapsed "Archived Items" section |
+| State                                | Customer sees   | Admin sees                            |
+| ------------------------------------ | --------------- | ------------------------------------- |
+| `is_active=true, is_archived=false`  | Normal drink    | Toggle on                             |
+| `is_active=false, is_archived=false` | "Sold Out"      | Toggle off                            |
+| `is_archived=true`                   | Hidden entirely | In collapsed "Archived Items" section |
 
 - **Sold Out (`is_active`)** — Used during events when a drink runs out
 - **Archived (`is_archived`)** — Used between events to remove drinks not being served. Restorable from admin.
@@ -492,6 +508,7 @@ Two separate states for menu items:
 ### Sold-Out Display
 
 Items toggled OFF in admin appear on `/order` with:
+
 - 50% opacity (faded)
 - "Sold Out" maroon pill badge
 - Tap disabled, cursor not-allowed
@@ -499,17 +516,18 @@ Items toggled OFF in admin appear on `/order` with:
 ### Unavailable Modifier Display
 
 Modifiers toggled OFF appear in customizer modal:
+
 - Faded button with dashed border
 - "Sold Out" label below (maroon, semibold)
 - Auto-selects first available option if default unavailable
 
 ### Visual Direction Options (Explored)
 
-| Option | Name | Feel | Key Features |
-|--------|------|------|--------------|
-| A | The Courtyard | Warm, structured | Category zones with borders, corner ribbons, framed confirmation |
-| B | Playful Pop | Fun, delightful | Drink icons (cardamom, ginger), floating sections, confetti |
-| C | Editorial Elegance | Refined, confident | Left-aligned header, vertical category labels, asymmetric |
+| Option | Name               | Feel               | Key Features                                                     |
+| ------ | ------------------ | ------------------ | ---------------------------------------------------------------- |
+| A      | The Courtyard      | Warm, structured   | Category zones with borders, corner ribbons, framed confirmation |
+| B      | Playful Pop        | Fun, delightful    | Drink icons (cardamom, ginger), floating sections, confetti      |
+| C      | Editorial Elegance | Refined, confident | Left-aligned header, vertical category labels, asymmetric        |
 
 All options keep: Brand colors, fonts, existing animations.
 

@@ -5,23 +5,33 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params
     const body = await request.json()
-    const { status } = body
+    const { status, claimed_by } = body
 
     // Validate status
-    if (!status || !['placed', 'ready', 'canceled'].includes(status)) {
+    if (!status || !['placed', 'in_progress', 'ready', 'canceled'].includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status. Must be "placed", "ready", or "canceled"' },
+        { error: 'Invalid status. Must be "placed", "in_progress", "ready", or "canceled"' },
         { status: 400 }
       )
+    }
+
+    // Build update object
+    const updateFields: Record<string, unknown> = {
+      status,
+      updated_at: new Date().toISOString(),
+    }
+
+    // Handle claimed_by: set when provided, clear when returning to placed
+    if (claimed_by !== undefined) {
+      updateFields.claimed_by = claimed_by
+    } else if (status === 'placed') {
+      updateFields.claimed_by = null
     }
 
     // Update order in database
     const { data, error } = await supabase
       .from('orders')
-      .update({
-        status,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateFields)
       .eq('id', id)
       .select()
       .single()

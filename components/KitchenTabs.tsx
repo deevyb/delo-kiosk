@@ -6,6 +6,40 @@ import { OrderStatus } from '@/lib/supabase'
 
 type MainTab = 'placed' | 'ready'
 
+function DropdownToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="w-full px-4 min-h-[44px] pb-2 flex items-center justify-between text-left font-manrope font-semibold text-base text-delo-navy/70 hover:bg-delo-navy/5 transition-colors"
+    >
+      <span>{label}</span>
+      <div
+        aria-hidden="true"
+        className={`w-10 h-[22px] rounded-full relative transition-colors duration-150 ${
+          checked ? 'bg-delo-maroon' : 'bg-delo-navy/20'
+        }`}
+      >
+        <motion.div
+          className="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm"
+          animate={{ left: checked ? 21 : 3 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        />
+      </div>
+    </motion.button>
+  )
+}
+
 function DropdownSectionLabel({ label }: { label: string }) {
   return (
     <div className="px-4 pt-3 pb-1">
@@ -24,6 +58,9 @@ interface KitchenTabsProps {
   cancelledCount: number
   todayOnly: boolean
   onTodayOnlyChange: (value: boolean) => void
+  isMultiBarista?: boolean
+  myDrinksOnly?: boolean
+  onMyDrinksOnlyChange?: (value: boolean) => void
 }
 
 export default function KitchenTabs({
@@ -34,6 +71,9 @@ export default function KitchenTabs({
   cancelledCount,
   todayOnly,
   onTodayOnlyChange,
+  isMultiBarista = false,
+  myDrinksOnly = true,
+  onMyDrinksOnlyChange,
 }: KitchenTabsProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
@@ -51,7 +91,7 @@ export default function KitchenTabs({
   }, [dropdownOpen])
 
   const mainTabs: { id: MainTab; label: string; count: number }[] = [
-    { id: 'placed', label: 'Placed', count: placedCount },
+    { id: 'placed', label: 'Queue', count: placedCount },
     { id: 'ready', label: 'Ready', count: readyCount },
   ]
 
@@ -69,7 +109,9 @@ export default function KitchenTabs({
               setDropdownOpen(false)
             }}
             className={`relative flex-1 py-3 px-6 rounded-lg font-manrope font-semibold text-base transition-colors min-h-[52px] ${
-              activeTab === tab.id ? 'text-delo-maroon' : 'text-delo-navy/50 hover:text-delo-navy/70'
+              activeTab === tab.id
+                ? 'text-delo-maroon'
+                : 'text-delo-navy/50 hover:text-delo-navy/70'
             }`}
           >
             {/* Active tab background — only for main tabs */}
@@ -134,28 +176,14 @@ export default function KitchenTabs({
 
               {/* FILTER section */}
               <DropdownSectionLabel label="Filter" />
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                role="switch"
-                aria-checked={todayOnly}
-                onClick={() => onTodayOnlyChange(!todayOnly)}
-                className="w-full px-4 min-h-[44px] pb-2 flex items-center justify-between text-left font-manrope font-semibold text-base text-delo-navy/70 hover:bg-delo-navy/5 transition-colors"
-              >
-                <span>Today only</span>
-                {/* Toggle switch */}
-                <div
-                  aria-hidden="true"
-                  className={`w-10 h-[22px] rounded-full relative transition-colors duration-150 ${
-                    todayOnly ? 'bg-delo-maroon' : 'bg-delo-navy/20'
-                  }`}
-                >
-                  <motion.div
-                    className="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm"
-                    animate={{ left: todayOnly ? 21 : 3 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  />
-                </div>
-              </motion.button>
+              <DropdownToggle label="Today only" checked={todayOnly} onChange={onTodayOnlyChange} />
+              {isMultiBarista && onMyDrinksOnlyChange && (
+                <DropdownToggle
+                  label="My drinks only"
+                  checked={myDrinksOnly}
+                  onChange={onMyDrinksOnlyChange}
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

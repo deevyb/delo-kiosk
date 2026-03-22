@@ -58,12 +58,15 @@ export default function DashboardSection() {
   }, [calendarOpen])
 
   // Handle day selection
-  const handleDaySelect = useCallback((day: Date | undefined) => {
-    if (!day) return
-    const dateStr = new Intl.DateTimeFormat('en-CA').format(day)
-    setSelectedDate(dateStr === todayStr ? '' : dateStr)
-    setCalendarOpen(false)
-  }, [todayStr])
+  const handleDaySelect = useCallback(
+    (day: Date | undefined) => {
+      if (!day) return
+      const dateStr = new Intl.DateTimeFormat('en-CA').format(day)
+      setSelectedDate(dateStr === todayStr ? '' : dateStr)
+      setCalendarOpen(false)
+    },
+    [todayStr]
+  )
 
   // Fetch stats on mount and when selectedDate changes
   useEffect(() => {
@@ -196,8 +199,20 @@ export default function DashboardSection() {
             onClick={() => setCalendarOpen(!calendarOpen)}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-delo-navy/15 rounded-lg font-manrope text-sm text-delo-navy shadow-sm hover:border-delo-navy/30 transition-colors"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-delo-navy/40">
-              <path d="M5 1v2M11 1v2M2 6h12M3 3h10a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="text-delo-navy/40"
+            >
+              <path
+                d="M5 1v2M11 1v2M2 6h12M3 3h10a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             {isViewingToday ? 'Today' : formatDateLabel(selectedDate)}
           </button>
@@ -247,8 +262,14 @@ export default function DashboardSection() {
         >
           {/* Order Count Cards */}
           <div className="grid grid-cols-2 gap-4">
-            <StatsCard title={isViewingToday ? 'Today' : formatDateLabel(selectedDate)} counts={stats.today} />
-            <StatsCard title={isViewingToday ? 'All Time' : `Up to ${formatDateLabel(selectedDate)}`} counts={stats.allTime} />
+            <StatsCard
+              title={isViewingToday ? 'Today' : formatDateLabel(selectedDate)}
+              counts={stats.today}
+            />
+            <StatsCard
+              title={isViewingToday ? 'All Time' : `Up to ${formatDateLabel(selectedDate)}`}
+              counts={stats.allTime}
+            />
           </div>
 
           {/* Popular Drinks + Modifier Preferences */}
@@ -263,59 +284,59 @@ export default function DashboardSection() {
       <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
         <h2 className="font-bricolage font-semibold text-xl text-delo-navy mb-2">Export Orders</h2>
 
-      {/* Error banner */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm"
-          >
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Error banner */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Intro text */}
-      <p className="text-description text-sm mb-6">
-        Download order data as CSV for your records. Leave dates blank to export all orders.
-      </p>
+        {/* Intro text */}
+        <p className="text-description text-sm mb-6">
+          Download order data as CSV for your records. Leave dates blank to export all orders.
+        </p>
 
-      {/* Date range inputs */}
-      <div className="mb-6">
-        <label className="block text-sm font-manrope font-semibold text-delo-navy/70 mb-2">
-          Date Range (optional)
-        </label>
-        <div className="flex gap-4 items-center">
-          <div className="flex-1">
-            <input
-              ref={startDateRef}
-              type="date"
-              className="w-full px-4 py-3 border border-delo-navy/20 rounded-lg font-manrope text-base focus:outline-none focus:ring-2 focus:ring-delo-maroon/30 focus:border-delo-maroon date-input"
-              aria-label="Start date"
-            />
-          </div>
-          <span className="text-delo-navy/40 font-manrope">to</span>
-          <div className="flex-1">
-            <input
-              ref={endDateRef}
-              type="date"
-              className="w-full px-4 py-3 border border-delo-navy/20 rounded-lg font-manrope text-base focus:outline-none focus:ring-2 focus:ring-delo-maroon/30 focus:border-delo-maroon date-input"
-              aria-label="End date"
-            />
+        {/* Date range inputs */}
+        <div className="mb-6">
+          <label className="block text-sm font-manrope font-semibold text-delo-navy/70 mb-2">
+            Date Range (optional)
+          </label>
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <input
+                ref={startDateRef}
+                type="date"
+                className="w-full px-4 py-3 border border-delo-navy/20 rounded-lg font-manrope text-base focus:outline-none focus:ring-2 focus:ring-delo-maroon/30 focus:border-delo-maroon date-input"
+                aria-label="Start date"
+              />
+            </div>
+            <span className="text-delo-navy/40 font-manrope">to</span>
+            <div className="flex-1">
+              <input
+                ref={endDateRef}
+                type="date"
+                className="w-full px-4 py-3 border border-delo-navy/20 rounded-lg font-manrope text-base focus:outline-none focus:ring-2 focus:ring-delo-maroon/30 focus:border-delo-maroon date-input"
+                aria-label="End date"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Download button */}
-      <button
-        onClick={handleDownload}
-        disabled={isLoading}
-        className="px-6 py-3 min-h-[44px] font-manrope font-semibold text-delo-cream bg-delo-maroon hover:bg-delo-maroon/90 disabled:bg-delo-maroon/50 disabled:cursor-not-allowed rounded-lg transition-colors"
-      >
-        {isLoading ? 'Downloading...' : 'Download CSV'}
-      </button>
+        {/* Download button */}
+        <button
+          onClick={handleDownload}
+          disabled={isLoading}
+          className="px-6 py-3 min-h-[44px] font-manrope font-semibold text-delo-cream bg-delo-maroon hover:bg-delo-maroon/90 disabled:bg-delo-maroon/50 disabled:cursor-not-allowed rounded-lg transition-colors"
+        >
+          {isLoading ? 'Downloading...' : 'Download CSV'}
+        </button>
       </div>
     </div>
   )
@@ -334,10 +355,15 @@ function StatsCard({ title, counts }: { title: string; counts: OrderCounts }) {
         {counts.total}
         <span className="text-lg font-semibold text-delo-navy/40 ml-2">orders</span>
       </p>
-      <div className="flex gap-4 text-sm font-manrope">
+      <div className="flex gap-4 text-sm font-manrope flex-wrap">
         <span className="text-delo-navy/70">
           <span className="font-semibold text-[#C85A2E]">{counts.placed}</span> placed
         </span>
+        {counts.in_progress > 0 && (
+          <span className="text-delo-navy/70">
+            <span className="font-semibold text-blue-600">{counts.in_progress}</span> in progress
+          </span>
+        )}
         <span className="text-delo-navy/70">
           <span className="font-semibold text-green-600">{counts.ready}</span> ready
         </span>
@@ -376,11 +402,7 @@ function PopularDrinksList({ drinks }: { drinks: DrinkCount[] }) {
 }
 
 /** Modifier preferences with visual progress bars */
-function ModifierPreferences({
-  breakdown,
-}: {
-  breakdown: Record<string, ModifierOption[]>
-}) {
+function ModifierPreferences({ breakdown }: { breakdown: Record<string, ModifierOption[]> }) {
   const categories = Object.entries(breakdown)
 
   if (categories.length === 0) {
