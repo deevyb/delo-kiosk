@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 async function getOrders() {
-  // Fetch orders with status 'placed' or 'ready' (not canceled)
+  // Fetch all orders (placed, ready, and canceled)
   const { data: orders, error } = await supabase
     .from('orders')
     .select('*')
-    .in('status', ['placed', 'ready'])
+    .in('status', ['placed', 'ready', 'canceled'])
     .order('created_at', { ascending: true })
 
   if (error) {

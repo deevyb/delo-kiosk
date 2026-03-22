@@ -133,7 +133,7 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
 - `modifier_config` on menu_items controls which modifier categories apply to each drink
 - `modifiers` JSONB on orders stores selected choices: `{"milk": "Oat", "temperature": "Iced"}`
 - Denormalized item name in orders for simplicity and historical accuracy
-- Status enum is strict: only `placed`, `ready`, `canceled`
+- Status enum: `placed`, `ready`, `canceled` — all transitions allowed (any → any)
 
 ---
 
