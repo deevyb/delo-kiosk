@@ -29,7 +29,6 @@ export default function AdminClient({
   const [activeTab, setActiveTab] = useState<AdminTab>('menu')
   const [menuItems, setMenuItems] = useState(initialMenuItems)
   const [modifiers, setModifiers] = useState(initialModifiers)
-
   // Update a menu item in local state (called after API success)
   const handleMenuItemUpdate = (updatedItem: MenuItem) => {
     setMenuItems((prev) => prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)))
@@ -58,15 +57,18 @@ export default function AdminClient({
   }
 
   return (
-    <main className="min-h-screen p-8 bg-delo-cream">
+    <main className="min-h-screen p-4 md:p-8 bg-delo-cream">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-4 md:mb-6">
           <div>
             <Link href="/" className="cursor-pointer">
-              <h1 className="font-yatra text-4xl text-delo-maroon mb-1">Delo Coffee Admin</h1>
+              <h1 className="font-yatra text-2xl md:text-4xl text-delo-maroon mb-1 text-balance">
+                <span className="md:hidden">Delo Admin</span>
+                <span className="hidden md:inline">Delo Coffee Admin</span>
+              </h1>
             </Link>
-            <p className="text-description">Manage your menu and view orders</p>
+            <p className="text-description hidden md:block">Manage your menu and view orders</p>
           </div>
           <NavMenu onLogout={onLogout} />
         </div>
@@ -75,7 +77,7 @@ export default function AdminClient({
         <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Tab Content */}
-        <div className="mt-6">
+        <div className="mt-4 md:mt-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

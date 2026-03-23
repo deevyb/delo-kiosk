@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 /**
  * DashboardSection - Stats overview and CSV export
@@ -16,6 +17,8 @@ import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '
  * - CSV export functionality
  */
 export default function DashboardSection() {
+  const isMobile = useIsMobile()
+
   // Stats state
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
@@ -194,48 +197,61 @@ export default function DashboardSection() {
     <div className="space-y-6">
       {/* Date Picker */}
       <div className="flex items-center justify-end gap-3" ref={calendarRef}>
-        <div className="relative">
-          <button
-            onClick={() => setCalendarOpen(!calendarOpen)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-delo-navy/15 rounded-lg font-manrope text-sm text-delo-navy shadow-sm hover:border-delo-navy/30 transition-colors"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              className="text-delo-navy/40"
+        {isMobile ? (
+          <input
+            type="date"
+            value={selectedDate || todayStr}
+            max={todayStr}
+            onChange={(e) => {
+              const val = e.target.value
+              setSelectedDate(val === todayStr ? '' : val)
+            }}
+            className="px-3 py-2 bg-white border border-delo-navy/15 rounded-lg font-manrope text-sm text-delo-navy shadow-sm date-input"
+          />
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setCalendarOpen(!calendarOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-delo-navy/15 rounded-lg font-manrope text-sm text-delo-navy shadow-sm hover:border-delo-navy/30 transition-colors"
             >
-              <path
-                d="M5 1v2M11 1v2M2 6h12M3 3h10a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {isViewingToday ? 'Today' : formatDateLabel(selectedDate)}
-          </button>
-          <AnimatePresence>
-            {calendarOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl border border-delo-navy/10 shadow-lg p-3 delo-calendar"
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="text-delo-navy/40"
               >
-                <DayPicker
-                  mode="single"
-                  selected={selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()}
-                  onSelect={handleDaySelect}
-                  disabled={{ after: new Date() }}
-                  defaultMonth={selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()}
+                <path
+                  d="M5 1v2M11 1v2M2 6h12M3 3h10a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </svg>
+              {isViewingToday ? 'Today' : formatDateLabel(selectedDate)}
+            </button>
+            <AnimatePresence>
+              {calendarOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 z-50 bg-white rounded-xl border border-delo-navy/10 shadow-lg p-3 delo-calendar"
+                >
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()}
+                    onSelect={handleDaySelect}
+                    disabled={{ after: new Date() }}
+                    defaultMonth={selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
         {!isViewingToday && (
           <button
             onClick={() => setSelectedDate('')}
@@ -261,7 +277,7 @@ export default function DashboardSection() {
           className="space-y-6"
         >
           {/* Order Count Cards */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <StatsCard
               title={isViewingToday ? 'Today' : formatDateLabel(selectedDate)}
               counts={stats.today}
@@ -273,7 +289,7 @@ export default function DashboardSection() {
           </div>
 
           {/* Popular Drinks + Modifier Preferences */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <PopularDrinksList drinks={stats.popularDrinks} />
             <ModifierPreferences breakdown={stats.modifierBreakdown} />
           </div>
@@ -281,8 +297,10 @@ export default function DashboardSection() {
       ) : null}
 
       {/* CSV Export Section */}
-      <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
-        <h2 className="font-bricolage font-semibold text-xl text-delo-navy mb-2">Export Orders</h2>
+      <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
+        <h2 className="font-bricolage font-semibold text-lg md:text-xl text-delo-navy mb-2 text-balance">
+          Export Orders
+        </h2>
 
         {/* Error banner */}
         <AnimatePresence>
@@ -299,17 +317,20 @@ export default function DashboardSection() {
         </AnimatePresence>
 
         {/* Intro text */}
-        <p className="text-description text-sm mb-6">
+        <p className="text-description text-xs md:text-sm mb-4 md:mb-6 text-pretty">
           Download order data as CSV for your records. Leave dates blank to export all orders.
         </p>
 
         {/* Date range inputs */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <label className="block text-sm font-manrope font-semibold text-delo-navy/70 mb-2">
             Date Range (optional)
           </label>
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-center">
             <div className="flex-1">
+              <label className="block text-xs font-manrope text-delo-navy/50 mb-1 md:hidden">
+                From
+              </label>
               <input
                 ref={startDateRef}
                 type="date"
@@ -317,8 +338,11 @@ export default function DashboardSection() {
                 aria-label="Start date"
               />
             </div>
-            <span className="text-delo-navy/40 font-manrope">to</span>
+            <span className="text-delo-navy/40 font-manrope hidden md:block">to</span>
             <div className="flex-1">
+              <label className="block text-xs font-manrope text-delo-navy/50 mb-1 md:hidden">
+                To
+              </label>
               <input
                 ref={endDateRef}
                 type="date"
@@ -330,13 +354,14 @@ export default function DashboardSection() {
         </div>
 
         {/* Download button */}
-        <button
+        <motion.button
           onClick={handleDownload}
           disabled={isLoading}
-          className="px-6 py-3 min-h-[44px] font-manrope font-semibold text-delo-cream bg-delo-maroon hover:bg-delo-maroon/90 disabled:bg-delo-maroon/50 disabled:cursor-not-allowed rounded-lg transition-colors"
+          whileTap={{ scale: 0.97 }}
+          className="w-full md:w-auto px-6 py-3 min-h-[44px] font-manrope font-semibold text-delo-cream bg-delo-maroon hover:bg-delo-maroon/90 disabled:bg-delo-maroon/50 disabled:cursor-not-allowed rounded-lg transition-colors"
         >
           {isLoading ? 'Downloading...' : 'Download CSV'}
-        </button>
+        </motion.button>
       </div>
     </div>
   )
@@ -347,13 +372,13 @@ export default function DashboardSection() {
 /** Stats card showing order counts with status breakdown */
 function StatsCard({ title, counts }: { title: string; counts: OrderCounts }) {
   return (
-    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
-      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1">
+    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
+      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1 text-balance">
         {title}
       </h3>
-      <p className="font-bricolage font-bold text-4xl text-delo-maroon mb-3">
+      <p className="font-bricolage font-bold text-3xl md:text-4xl text-delo-maroon mb-3 tabular-nums">
         {counts.total}
-        <span className="text-lg font-semibold text-delo-navy/40 ml-2">orders</span>
+        <span className="text-base md:text-lg font-semibold text-delo-navy/40 ml-2">orders</span>
       </p>
       <div className="flex gap-4 text-sm font-manrope flex-wrap">
         <span className="text-delo-navy/70">
@@ -378,7 +403,7 @@ function StatsCard({ title, counts }: { title: string; counts: OrderCounts }) {
 /** Scrollable list of top drinks */
 function PopularDrinksList({ drinks }: { drinks: DrinkCount[] }) {
   return (
-    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-4">
         Popular Drinks
       </h3>
@@ -392,7 +417,9 @@ function PopularDrinksList({ drinks }: { drinks: DrinkCount[] }) {
                 <span className="text-delo-navy/40 w-6 inline-block">{index + 1}.</span>
                 {drink.name}
               </span>
-              <span className="font-manrope font-semibold text-delo-maroon">{drink.count}</span>
+              <span className="font-manrope font-semibold text-delo-maroon tabular-nums">
+                {drink.count}
+              </span>
             </div>
           ))}
         </div>
@@ -407,7 +434,7 @@ function ModifierPreferences({ breakdown }: { breakdown: Record<string, Modifier
 
   if (categories.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+      <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
         <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-4">
           Modifier Preferences
         </h3>
@@ -417,7 +444,7 @@ function ModifierPreferences({ breakdown }: { breakdown: Record<string, Modifier
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-4">
         Modifier Preferences
       </h3>
@@ -434,7 +461,7 @@ function ModifierPreferences({ breakdown }: { breakdown: Record<string, Modifier
                       style={{ width: `${option.percentage}%` }}
                     />
                   </div>
-                  <span className="font-manrope font-semibold text-sm text-delo-navy w-10 text-right">
+                  <span className="font-manrope font-semibold text-sm text-delo-navy w-10 text-right tabular-nums">
                     {option.percentage}%
                   </span>
                   <span className="font-manrope text-sm text-delo-navy/70 w-16">
@@ -453,14 +480,14 @@ function ModifierPreferences({ breakdown }: { breakdown: Record<string, Modifier
 /** Loading skeleton for stats */
 function StatsLoadingSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-32" />
-        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-32" />
+    <div className="space-y-4 md:space-y-6 animate-pulse">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-32" />
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-32" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-48" />
-        <div className="bg-white rounded-xl p-6 border border-delo-navy/10 h-48" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
       </div>
     </div>
   )

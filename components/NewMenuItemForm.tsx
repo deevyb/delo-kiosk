@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MenuItem } from '@/lib/supabase'
-import Modal from './Modal'
+import ResponsiveModal from './ResponsiveModal'
 
 interface NewMenuItemFormProps {
   categories: string[] // modifier categories from database
@@ -91,7 +91,7 @@ export default function NewMenuItemForm({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <ResponsiveModal isOpen={isOpen} onClose={onClose} size="lg" fullSheet>
       {/* Header */}
       <h2 className="modal-title">Add New Item</h2>
       <p className="modal-description">Create a new drink for the menu</p>
@@ -187,6 +187,6 @@ export default function NewMenuItemForm({
           {isSaving ? 'Creating...' : 'Create Item'}
         </motion.button>
       </div>
-    </Modal>
+    </ResponsiveModal>
   )
 }

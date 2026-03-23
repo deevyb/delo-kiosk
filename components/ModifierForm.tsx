@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Modifier } from '@/lib/supabase'
-import Modal from './Modal'
+import ResponsiveModal from './ResponsiveModal'
 
 interface ModifierFormProps {
   modifier?: Modifier // undefined = add mode, defined = edit mode
@@ -102,7 +102,7 @@ export default function ModifierForm({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <ResponsiveModal isOpen={isOpen} onClose={onClose} size="md" fullSheet>
       {/* Header */}
       <h2 className="modal-title">{isEditing ? 'Edit Modifier' : 'Add Modifier'}</h2>
       <p className="modal-description">
@@ -185,6 +185,6 @@ export default function ModifierForm({
           {isSaving ? 'Saving...' : 'Save'}
         </motion.button>
       </div>
-    </Modal>
+    </ResponsiveModal>
   )
 }

@@ -255,7 +255,7 @@ export default function MenuItemsSection({
 
     return (
       <div className="mb-8 last:mb-0">
-        <h3 className="font-bricolage font-semibold text-base text-delo-navy/60 uppercase tracking-wide mb-3">
+        <h3 className="font-bricolage font-semibold text-sm md:text-base text-delo-navy/60 uppercase tracking-wide mb-3 text-balance">
           {title}
         </h3>
         <DndContext
@@ -284,7 +284,7 @@ export default function MenuItemsSection({
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       {/* Error banner */}
       <AnimatePresence>
         {error && (
@@ -300,8 +300,8 @@ export default function MenuItemsSection({
       </AnimatePresence>
 
       {/* Header with Add button */}
-      <div className="flex justify-between items-start mb-6">
-        <p className="text-description text-sm">
+      <div className="flex justify-between items-start mb-4 md:mb-6">
+        <p className="text-description text-xs md:text-sm text-pretty">
           Toggle drinks on or off. Tap Edit to change details. Drag to reorder.
         </p>
         <motion.button
@@ -345,10 +345,10 @@ export default function MenuItemsSection({
                 {archivedItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-4 rounded-xl border bg-delo-navy/5 border-delo-navy/5"
+                    className="flex items-center justify-between p-3 md:p-4 rounded-xl border bg-delo-navy/5 border-delo-navy/5"
                   >
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bricolage font-semibold text-lg text-delo-navy/40 truncate">
+                      <h4 className="font-bricolage font-semibold text-base md:text-lg text-delo-navy/40 truncate">
                         {item.name}
                       </h4>
                       <p className="text-sm text-delo-navy/30">{item.category}</p>

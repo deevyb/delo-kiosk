@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 22, 2026 (session 7)
+> Last Updated: March 23, 2026 (session 8)
 
 ## Current State
 
@@ -9,18 +9,18 @@
 | `/`        | Complete | Landing page with navigation                                                                                                                                                                      |
 | `/order`   | Complete | Full ordering flow with confirmation & auto-reset + **mobile responsive** (2-col grid, bottom sheet via vaul, responsive modifiers)                                                               |
 | `/kitchen` | Complete | Real-time barista display + NavMenu + Ready/Cancelled tabs + Today-only filter + **Multi-barista mode** + **mobile responsive** (single-col cards, responsive tabs, cancel modal as bottom sheet) |
-| `/admin`   | Complete | Passcode + tabs + menu items (edit name/desc, modifiers, archive, drag-to-reorder) + modifiers + dashboard with date picker                                                                       |
+| `/admin`   | Complete | Passcode + tabs + menu items (edit name/desc, modifiers, archive, drag-to-reorder) + modifiers + dashboard with date picker + **mobile responsive** (condensed cards, full-sheet modals, stacked dashboard, native date picker, shared PillTabs) |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 
 ## Backlog
 
-| #   | Title                                  | Type        | Description                                                                                                                                |
-| --- | -------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Mobile compatibility (admin + landing) | Feature     | Admin and landing page still need mobile responsive treatment (order + kitchen done in session 6)                                          |
-| 2   | Queue position & ETA on confirmation   | Feature     | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
-| 3   | Show ingredients on drink card         | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too                   |
-| 4   | Landing page revamp                    | Design      | Redesign the `/` landing page (details TBD — may tie into visual direction choice)                                                         |
+| #   | Title                                | Type        | Description                                                                                                                                |
+| --- | ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Mobile compatibility (landing)       | Feature     | Landing page still needs mobile responsive treatment (deferred to landing page revamp)                                                     |
+| 2   | Queue position & ETA on confirmation | Feature     | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
+| 3   | Show ingredients on drink card       | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too                   |
+| 4   | Landing page revamp                  | Design      | Redesign the `/` landing page (details TBD — may tie into visual direction choice). Includes mobile responsive.                            |
 
 ## Blockers
 
@@ -28,6 +28,7 @@ None.
 
 ## Changelog
 
+- **Mar 23** — Admin mobile responsive: shared PillTabs component (used by admin + kitchen), condensed card layout, full-sheet bottom sheets for all admin modals (MenuItemEditor, NewMenuItemForm, ModifierForm), dashboard stacks vertically with native date picker on mobile, responsive export section, "Delo Admin" mobile title, compact tab labels ("Menu" / "Mods" / "Dashboard"), tabular-nums on stats, text-balance on headings, CSS-only responsive (no hydration mismatches)
 - **Mar 22** — Prep time badge on Ready tab: today's ready orders show elapsed time (hourglass icon + "2m 30s" format) instead of relative time; past orders keep date badge; `formatPrepTime` utility in `dateUtils.ts`
 - **Mar 22** — Mobile polish: Apple HIG bottom sheet close button (SVG xmark, grab handle row), drink card font bump, Drawer.Description for a11y
 - **Mar 22** — Mobile compatibility for order + kitchen: vaul bottom sheet (customizer + cancel confirm), 2-col drink grid, single-col kitchen cards, responsive padding/typography/buttons, `useIsMobile` hook, `ResponsiveModal` component, modifier button overflow fix
@@ -49,3 +50,4 @@ None.
 - Dependencies: react-day-picker (dashboard calendar), vaul (mobile bottom sheets, added session 6)
 - DB Schema: orders table has `in_progress` status + `claimed_by` column (added session 5)
 - Mobile: Responsive at `md:` (768px) breakpoint via Tailwind classes + `useIsMobile` hook for Modal/Drawer swap
+- Shared Components: `PillTabs` (generic, CSS-only responsive labels) used by AdminTabs + KitchenTabs; `ResponsiveModal` (fullSheet prop for admin modals)

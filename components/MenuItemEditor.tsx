@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MenuItem } from '@/lib/supabase'
-import Modal from './Modal'
+import ResponsiveModal from './ResponsiveModal'
 
 interface MenuItemEditorProps {
   item: MenuItem
@@ -86,7 +86,7 @@ export default function MenuItemEditor({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <ResponsiveModal isOpen={isOpen} onClose={onClose} size="md" fullSheet>
       {/* Header */}
       <h2 className="modal-title">Edit Item</h2>
 
@@ -238,6 +238,6 @@ export default function MenuItemEditor({
           )}
         </AnimatePresence>
       </div>
-    </Modal>
+    </ResponsiveModal>
   )
 }

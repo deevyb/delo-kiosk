@@ -11,6 +11,7 @@ interface ResponsiveModalProps {
   onClose: () => void
   title?: string
   size?: 'sm' | 'md' | 'lg'
+  fullSheet?: boolean
   children: ReactNode
 }
 
@@ -27,6 +28,7 @@ export default function ResponsiveModal({
   onClose,
   title,
   size = 'lg',
+  fullSheet = false,
   children,
 }: ResponsiveModalProps) {
   const isMobile = useIsMobile()
@@ -50,7 +52,9 @@ export default function ResponsiveModal({
     >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-delo-navy/40 z-40" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-delo-cream max-h-[92vh]">
+        <Drawer.Content
+          className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-delo-cream ${fullSheet ? 'max-h-[95vh]' : 'max-h-[92vh]'}`}
+        >
           <div className="relative flex-shrink-0 pt-3 pb-2">
             <div className="mx-auto h-1.5 w-9 rounded-full bg-delo-navy/15" />
             <motion.button

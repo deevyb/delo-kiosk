@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OrderStatus } from '@/lib/supabase'
-
-type MainTab = 'placed' | 'ready'
+import PillTabs, { PillTab } from './PillTabs'
 
 function DropdownToggle({
   label,
@@ -90,7 +89,7 @@ export default function KitchenTabs({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [dropdownOpen])
 
-  const mainTabs: { id: MainTab; label: string; count: number }[] = [
+  const mainTabs: PillTab[] = [
     { id: 'placed', label: 'Queue', count: placedCount },
     { id: 'ready', label: 'Ready', count: readyCount },
   ]
@@ -100,36 +99,16 @@ export default function KitchenTabs({
   return (
     <div className="flex items-center gap-2">
       {/* Main tabs */}
-      <div className="flex gap-1 bg-delo-navy/5 p-1 rounded-xl flex-1">
-        {mainTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              onTabChange(tab.id)
-              setDropdownOpen(false)
-            }}
-            className={`relative flex-1 py-2 px-3 md:py-3 md:px-6 rounded-lg font-manrope font-semibold text-sm md:text-base transition-colors min-h-[44px] md:min-h-[52px] ${
-              activeTab === tab.id
-                ? 'text-delo-maroon'
-                : 'text-delo-navy/50 hover:text-delo-navy/70'
-            }`}
-          >
-            {/* Active tab background — only for main tabs */}
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 bg-white rounded-lg shadow-sm"
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              />
-            )}
-
-            {/* Tab label with count */}
-            <span className="relative z-10 tabular-nums">
-              {tab.label} ({tab.count})
-            </span>
-          </button>
-        ))}
-      </div>
+      <PillTabs
+        tabs={mainTabs}
+        activeTab={activeTab}
+        onTabChange={(id) => {
+          onTabChange(id as OrderStatus)
+          setDropdownOpen(false)
+        }}
+        layoutId="activeTab"
+        className="flex-1"
+      />
 
       {/* Overflow menu */}
       <div ref={overflowRef} className="relative">

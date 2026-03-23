@@ -123,7 +123,7 @@ export default function ModifiersSection({ modifiers, onUpdate, onAdd }: Modifie
   const renderCategory = (category: string, items: Modifier[]) => {
     return (
       <div key={category} className="mb-8 last:mb-0">
-        <h3 className="font-bricolage font-semibold text-base text-delo-navy/60 uppercase tracking-wide mb-3">
+        <h3 className="font-bricolage font-semibold text-sm md:text-base text-delo-navy/60 uppercase tracking-wide mb-3 text-balance">
           {formatCategoryName(category)}
         </h3>
         <div className="space-y-2">
@@ -141,7 +141,7 @@ export default function ModifiersSection({ modifiers, onUpdate, onAdd }: Modifie
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-delo-navy/10">
+    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       {/* Error banner */}
       <AnimatePresence>
         {error && (
@@ -157,8 +157,8 @@ export default function ModifiersSection({ modifiers, onUpdate, onAdd }: Modifie
       </AnimatePresence>
 
       {/* Header with Add button */}
-      <div className="flex items-start justify-between mb-6">
-        <p className="text-description text-sm">
+      <div className="flex items-start justify-between mb-4 md:mb-6">
+        <p className="text-description text-xs md:text-sm text-pretty">
           Add or edit milk and temperature options. Toggle to show or hide on the order screen.
         </p>
         <motion.button
