@@ -84,9 +84,7 @@ export default function ResponsiveModal({
           ) : (
             <Drawer.Title className="sr-only">Dialog</Drawer.Title>
           )}
-          <Drawer.Description className="sr-only">
-            {title || 'Dialog'}
-          </Drawer.Description>
+          <Drawer.Description className="sr-only">{title || 'Dialog'}</Drawer.Description>
 
           <div className="px-6 pb-8 overflow-y-auto flex-1">{children}</div>
         </Drawer.Content>

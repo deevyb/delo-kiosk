@@ -33,6 +33,22 @@ export function isToday(timestamp: string): boolean {
 }
 
 /**
+ * Format elapsed duration between two timestamps as compact string.
+ * e.g. "2m 30s", "45s", "3m". Clamps to zero for clock-skew safety.
+ */
+export function formatPrepTime(createdAt: string, updatedAt: string): string {
+  const diff = new Date(updatedAt).getTime() - new Date(createdAt).getTime()
+  const totalSeconds = Math.max(0, Math.round(diff / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  if (totalSeconds === 0) return '< 1s'
+  if (minutes === 0) return `${seconds}s`
+  if (seconds === 0) return `${minutes}m`
+  return `${minutes}m ${seconds}s`
+}
+
+/**
  * Format a timestamp as "Mar 15" for same-year, "Mar 15, 2025" for different year.
  */
 export function formatShortDate(timestamp: string): string {

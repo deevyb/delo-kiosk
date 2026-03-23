@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 22, 2026 (session 6)
+> Last Updated: March 22, 2026 (session 7)
 
 ## Current State
 
@@ -15,13 +15,12 @@
 
 ## Backlog
 
-| #   | Title                                  | Type        | Description                                                                                                                                              |
-| --- | -------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Prep time badge on Ready tab           | Enhancement | Ready tab shows elapsed prep time (in-progress → ready) on today's orders instead of a date badge, e.g. "2m 30s". Past orders continue showing the date. |
-| 2   | Mobile compatibility (admin + landing) | Feature     | Admin and landing page still need mobile responsive treatment (order + kitchen done in session 6)                                                        |
-| 3   | Queue position & ETA on confirmation   | Feature     | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time               |
-| 4   | Show ingredients on drink card         | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too                                 |
-| 5   | Landing page revamp                    | Design      | Redesign the `/` landing page (details TBD — may tie into visual direction choice)                                                                       |
+| #   | Title                                  | Type        | Description                                                                                                                                |
+| --- | -------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Mobile compatibility (admin + landing) | Feature     | Admin and landing page still need mobile responsive treatment (order + kitchen done in session 6)                                          |
+| 2   | Queue position & ETA on confirmation   | Feature     | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
+| 3   | Show ingredients on drink card         | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too                   |
+| 4   | Landing page revamp                    | Design      | Redesign the `/` landing page (details TBD — may tie into visual direction choice)                                                         |
 
 ## Blockers
 
@@ -29,6 +28,7 @@ None.
 
 ## Changelog
 
+- **Mar 22** — Prep time badge on Ready tab: today's ready orders show elapsed time (hourglass icon + "2m 30s" format) instead of relative time; past orders keep date badge; `formatPrepTime` utility in `dateUtils.ts`
 - **Mar 22** — Mobile polish: Apple HIG bottom sheet close button (SVG xmark, grab handle row), drink card font bump, Drawer.Description for a11y
 - **Mar 22** — Mobile compatibility for order + kitchen: vaul bottom sheet (customizer + cancel confirm), 2-col drink grid, single-col kitchen cards, responsive padding/typography/buttons, `useIsMobile` hook, `ResponsiveModal` component, modifier button overflow fix
 - **Mar 22** — Multi-barista workflow: split Queue/In Progress layout, `?barista=` URL param, claim orders (Mark In Progress), barista identity badges (3-char, auto-color), modifier badges (Oat/Regular/Hot/Iced), "My drinks only" toggle, stacked button layout for in-progress cards, solo mode unchanged

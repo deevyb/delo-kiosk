@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Order } from '@/lib/supabase'
-import { isToday, formatShortDate } from '@/lib/dateUtils'
+import { isToday, formatShortDate, formatPrepTime } from '@/lib/dateUtils'
 import ModifierBadges from './ModifierBadges'
 import BaristaBadge from './BaristaBadge'
 import { getBaristaColor } from '@/lib/baristaColors'
@@ -51,11 +51,14 @@ export default function OrderCard({
   onMarkInProgress,
   onBackToQueue,
 }: OrderCardProps) {
-  // Use updated_at for cancelled orders (when it was cancelled), created_at for others
+  // Ready + today: show elapsed prep time (placed → ready). Others: relative time or date.
+  const isReadyToday = order.status === 'ready' && isToday(order.updated_at)
   const relevantTimestamp = order.status === 'canceled' ? order.updated_at : order.created_at
-  const timeBadge = isToday(relevantTimestamp)
-    ? getRelativeTime(relevantTimestamp, now)
-    : formatShortDate(relevantTimestamp)
+  const timeBadge = isReadyToday
+    ? formatPrepTime(order.created_at, order.updated_at)
+    : isToday(relevantTimestamp)
+      ? getRelativeTime(relevantTimestamp, now)
+      : formatShortDate(relevantTimestamp)
 
   // Barista highlight: thick left border + tinted background for current barista's orders
   const isMyOrder =
@@ -87,7 +90,23 @@ export default function OrderCard({
         </h3>
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
           {showBaristaBadge && <BaristaBadge name={order.claimed_by!} />}
-          <span className="font-roboto-mono text-sm text-delo-navy/50 bg-delo-navy/5 px-2 py-1 rounded">
+          <span className="inline-flex items-center gap-1.5 font-roboto-mono text-sm text-delo-navy/50 bg-delo-navy/5 px-2 py-1 rounded">
+            {isReadyToday && (
+              <svg
+                aria-hidden="true"
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 3h14M5 21h14M7 3v2a5 5 0 005 5 5 5 0 005-5V3M7 21v-2a5 5 0 015-5 5 5 0 015 5v2"
+                />
+              </svg>
+            )}
             {timeBadge}
           </span>
         </div>

@@ -58,15 +58,16 @@ Zero lost orders. No crashes during rush. Intuitive with no explanation needed. 
 
 **Check this table before starting any task. If a trigger matches, invoke the skill — do not wait to be asked.**
 
-| Trigger                                           | Skill                          | When                                 |
-| ------------------------------------------------- | ------------------------------ | ------------------------------------ |
-| New UI, screens, or visual direction              | `/frontend-design`             | Before writing UI code               |
-| UI polish (animations, hover, shadows)            | `/make-interfaces-feel-better` | After UI code, before review         |
-| Editing TSX/JSX components                        | `/react-best-practices`        | After all component edits            |
-| Feature touching 3+ files, new routes, DB changes | `/feature-dev`                 | Before starting implementation       |
-| Any code changes                                  | `/simplify`                    | After implementation, before testing |
-| Planning multi-step work                          | `/brainstorm`                  | Before writing any plan              |
-| Editing CLAUDE.md                                 | `/revise-claude-md`            | Before making changes                |
+| Trigger                                                 | Skill                          | When                                 |
+| ------------------------------------------------------- | ------------------------------ | ------------------------------------ |
+| New UI, screens, or visual direction                    | `/frontend-design`             | Before writing UI code               |
+| UI polish (animations, hover, shadows)                  | `/make-interfaces-feel-better` | After UI code, before review         |
+| Reviewing UI quality (animations, typography, a11y, UX) | `/userinterface-wiki`          | After UI work, as final audit        |
+| Editing TSX/JSX components                              | `/react-best-practices`        | After all component edits            |
+| Feature touching 3+ files, new routes, DB changes       | `/feature-dev`                 | Before starting implementation       |
+| Any code changes                                        | `/simplify`                    | After implementation, before testing |
+| Planning multi-step work                                | `/brainstorm`                  | Before writing any plan              |
+| Editing CLAUDE.md                                       | `/revise-claude-md`            | Before making changes                |
 
 **Do NOT skip skills.** Don't rationalize ("it's simple enough"). If a trigger matches, invoke it. If unsure, invoke it — checking is cheaper than missing.
 
