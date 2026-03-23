@@ -17,10 +17,9 @@
 
 | #   | Title                                | Type        | Description                                                                                                                                |
 | --- | ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Mobile compatibility (landing)       | Feature     | Landing page still needs mobile responsive treatment (deferred to landing page revamp)                                                     |
+| 1   | Landing page revamp                  | Design      | Redesign the `/` landing page + make it mobile responsive (details TBD — may tie into visual direction choice)                             |
 | 2   | Queue position & ETA on confirmation | Feature     | After placing an order, confirmation screen shows "You're #3 in line — ~6 min". Needs queue count from active orders + estimated prep time |
 | 3   | Show ingredients on drink card       | Enhancement | Display ingredients as a subtitle on the drink selection card in `/order`, while keeping them inside the detail card too                   |
-| 4   | Landing page revamp                  | Design      | Redesign the `/` landing page (details TBD — may tie into visual direction choice). Includes mobile responsive.                            |
 
 ## Blockers
 
