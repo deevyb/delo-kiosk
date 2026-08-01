@@ -8,7 +8,6 @@ interface SplitQueueLayoutProps {
   placedOrders: Order[]
   inProgressOrders: Order[] // Already filtered by myDrinksOnly in KitchenClient
   totalInProgressCount: number // Total across all baristas (for "2/5" display)
-  myDrinksOnly: boolean
   baristaName: string
   now: number
   onMarkReady: (orderId: string) => void
@@ -16,7 +15,6 @@ interface SplitQueueLayoutProps {
   onBackToQueue: (orderId: string) => void
   onCancelClick: (order: Order) => void
   updatingOrderId: string | null
-  newOrderIds: Set<string>
 }
 
 /**
@@ -28,7 +26,6 @@ export default function SplitQueueLayout({
   placedOrders,
   inProgressOrders,
   totalInProgressCount,
-  myDrinksOnly,
   baristaName,
   now,
   onMarkReady,
@@ -36,7 +33,6 @@ export default function SplitQueueLayout({
   onBackToQueue,
   onCancelClick,
   updatingOrderId,
-  newOrderIds,
 }: SplitQueueLayoutProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -62,7 +58,6 @@ export default function SplitQueueLayout({
                   onBackToQueue={onBackToQueue}
                   onCancelClick={() => onCancelClick(order)}
                   isUpdating={updatingOrderId === order.id}
-                  isNew={newOrderIds.has(order.id)}
                   isMultiBarista={true}
                   currentBarista={baristaName}
                 />
@@ -76,7 +71,7 @@ export default function SplitQueueLayout({
       <div className="order-1 md:order-2">
         <h2 className="font-manrope font-semibold text-sm text-delo-navy/60 mb-3 tabular-nums">
           In Progress (
-          {myDrinksOnly && inProgressOrders.length < totalInProgressCount
+          {inProgressOrders.length < totalInProgressCount
             ? `${inProgressOrders.length}/${totalInProgressCount}`
             : totalInProgressCount}
           )
@@ -98,7 +93,6 @@ export default function SplitQueueLayout({
                   onBackToQueue={onBackToQueue}
                   onCancelClick={() => onCancelClick(order)}
                   isUpdating={updatingOrderId === order.id}
-                  isNew={newOrderIds.has(order.id)}
                   isMultiBarista={true}
                   currentBarista={baristaName}
                 />
