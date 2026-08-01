@@ -86,7 +86,11 @@ delo-kiosk/
    npm install
    ```
 
-3. Create `.env.local` with your Supabase credentials:
+3. Copy `.env.example` to `.env` and fill in your Supabase credentials:
+
+   ```bash
+   cp .env.example .env
+   ```
 
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url

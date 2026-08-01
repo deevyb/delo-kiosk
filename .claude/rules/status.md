@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: March 23, 2026 (session 8)
+> Last Updated: July 31, 2026 (session 9)
 
 ## Current State
 
@@ -27,6 +27,7 @@ None.
 
 ## Changelog
 
+- **Jul 31** — Repo cleanup: removed stale build caches (.next, tsbuildinfo, .DS_Store), completed multi-barista spec doc, unused `.cursor/rules`, dead `GITHUB_PAT` in `.env`, expired `.env.local`; gitignored browser-testing artifacts; README now points at `.env` (matching actual setup); `getTodayDateString` made module-private
 - **Mar 23** — Admin mobile responsive: shared PillTabs component (used by admin + kitchen), condensed card layout, full-sheet bottom sheets for all admin modals (MenuItemEditor, NewMenuItemForm, ModifierForm), dashboard stacks vertically with native date picker on mobile, responsive export section, "Delo Admin" mobile title, compact tab labels ("Menu" / "Mods" / "Dashboard"), tabular-nums on stats, text-balance on headings, CSS-only responsive (no hydration mismatches)
 - **Mar 22** — Prep time badge on Ready tab: today's ready orders show elapsed time (hourglass icon + "2m 30s" format) instead of relative time; past orders keep date badge; `formatPrepTime` utility in `dateUtils.ts`
 - **Mar 22** — Mobile polish: Apple HIG bottom sheet close button (SVG xmark, grab handle row), drink card font bump, Drawer.Description for a11y

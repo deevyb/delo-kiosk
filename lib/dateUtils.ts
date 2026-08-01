@@ -21,7 +21,7 @@ const shortDateWithYearFormatter = new Intl.DateTimeFormat('en-US', {
 /**
  * Get today's date string (YYYY-MM-DD) in the device's local timezone.
  */
-export function getTodayDateString(): string {
+function getTodayDateString(): string {
   return dateFormatter.format(new Date())
 }
 
