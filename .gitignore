@@ -47,3 +47,7 @@ next-env.d.ts
 
 # Superpowers brainstorming mockups
 .superpowers
+
+# Browser testing artifacts (screenshots, console logs)
+.playwright-mcp
+/*.png
