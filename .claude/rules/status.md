@@ -4,11 +4,11 @@
 
 ## Current State
 
-| Route      | Status   | Notes                                                                                                                                                                                             |
-| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`        | Complete | Landing page with navigation                                                                                                                                                                      |
-| `/order`   | Complete | Full ordering flow with confirmation & auto-reset + **mobile responsive** (2-col grid, bottom sheet via vaul, responsive modifiers)                                                               |
-| `/kitchen` | Complete | Real-time barista display + NavMenu + Ready/Cancelled tabs + Today-only filter + **Multi-barista mode** + **mobile responsive** (single-col cards, responsive tabs, cancel modal as bottom sheet) |
+| Route      | Status   | Notes                                                                                                                                                                                                                                            |
+| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/`        | Complete | Landing page with navigation                                                                                                                                                                                                                     |
+| `/order`   | Complete | Full ordering flow with confirmation & auto-reset + **mobile responsive** (2-col grid, bottom sheet via vaul, responsive modifiers)                                                                                                              |
+| `/kitchen` | Complete | Real-time barista display + NavMenu + Ready/Cancelled tabs + Today-only filter + **Multi-barista mode** + **mobile responsive** (single-col cards, responsive tabs, cancel modal as bottom sheet)                                                |
 | `/admin`   | Complete | Passcode + tabs + menu items (edit name/desc, modifiers, archive, drag-to-reorder) + modifiers + dashboard with date picker + **mobile responsive** (condensed cards, full-sheet modals, stacked dashboard, native date picker, shared PillTabs) |
 
 **Live App:** https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
@@ -27,7 +27,7 @@ None.
 
 ## Changelog
 
-- **Jul 31** — Repo cleanup: removed stale build caches (.next, tsbuildinfo, .DS_Store), completed multi-barista spec doc, unused `.cursor/rules`, dead `GITHUB_PAT` in `.env`, expired `.env.local`; gitignored browser-testing artifacts; README now points at `.env` (matching actual setup); `getTodayDateString` made module-private
+- **Jul 31** — Repo cleanup: removed stale build caches (.next, tsbuildinfo, .DS_Store), completed multi-barista spec doc, unused `.cursor/rules`, dead `GITHUB_PAT` in `.env`, expired `.env.local`; gitignored browser-testing artifacts and `.claude/settings.local.json` (was only protected by a machine-local git config); README now points at `.env` (matching actual setup); `DashboardSection` now calls the cached `getTodayDateString()` instead of rebuilding two `Intl.DateTimeFormat` objects every render
 - **Mar 23** — Admin mobile responsive: shared PillTabs component (used by admin + kitchen), condensed card layout, full-sheet bottom sheets for all admin modals (MenuItemEditor, NewMenuItemForm, ModifierForm), dashboard stacks vertically with native date picker on mobile, responsive export section, "Delo Admin" mobile title, compact tab labels ("Menu" / "Mods" / "Dashboard"), tabular-nums on stats, text-balance on headings, CSS-only responsive (no hydration mismatches)
 - **Mar 22** — Prep time badge on Ready tab: today's ready orders show elapsed time (hourglass icon + "2m 30s" format) instead of relative time; past orders keep date badge; `formatPrepTime` utility in `dateUtils.ts`
 - **Mar 22** — Mobile polish: Apple HIG bottom sheet close button (SVG xmark, grab handle row), drink card font bump, Drawer.Description for a11y

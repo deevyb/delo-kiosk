@@ -49,5 +49,10 @@ next-env.d.ts
 .superpowers
 
 # Browser testing artifacts (screenshots, console logs)
-.playwright-mcp
+.playwright-mcp/
 /*.png
+
+# Claude Code local settings (machine-specific permission allowlist).
+# The rest of .claude/ (commands, rules, launch.json) is intentionally shared.
+.claude/settings.local.json
+.claude/*.local.json

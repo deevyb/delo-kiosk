@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
+import { getTodayDateString } from '@/lib/dateUtils'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 /**
@@ -34,9 +35,7 @@ export default function DashboardSection() {
   const [error, setError] = useState<string | null>(null)
 
   // Today's date in YYYY-MM-DD for max attribute and comparison
-  const todayStr = new Intl.DateTimeFormat('en-CA', {
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  }).format(new Date())
+  const todayStr = getTodayDateString()
 
   const isViewingToday = !selectedDate || selectedDate === todayStr
 
