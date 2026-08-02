@@ -37,10 +37,12 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
     }
   }
 
-  // No `initial={false}`: the status is always `live` on first render, so the banner is
-  // never present then and every appearance it can actually have is a real event.
+  // initial={false} — when the server's own fetch failed, the display mounts with the
+  // banner already showing. That's a state it woke up in, not something that just
+  // happened, so it should simply be there rather than slide in. Every later appearance
+  // is a real transition and still animates.
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {status !== 'live' && (
         <motion.div
           initial={offscreen}

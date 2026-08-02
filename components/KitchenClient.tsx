@@ -149,8 +149,10 @@ export default function KitchenClient({
    * revert the card. Guards the read rather than the write, which is what makes it
    * cover the whole race — a tap can start and finish inside one sync round trip.
    *
-   * A ref rather than state so `syncOrders` keeps a stable identity; otherwise every
-   * tap would restart the 30s timer and re-subscribe the realtime channel.
+   * A ref rather than state so `syncOrders` keeps a stable identity; otherwise every tap
+   * would restart the 30s timer and the reconnect catch-up, both of which depend on it.
+   * (The realtime channel is safe either way — its effect keeps an empty dependency list
+   * on purpose, precisely so nothing can tear the socket down.)
    */
   const writeGenerationRef = useRef(0)
 
