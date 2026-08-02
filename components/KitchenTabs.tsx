@@ -95,7 +95,7 @@ export default function KitchenTabs({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [dropdownOpen])
 
-  const mainTabs: PillTab[] = [
+  const mainTabs: PillTab<KitchenTab>[] = [
     { id: 'placed', label: 'Queue', count: placedCount },
     { id: 'ready', label: 'Ready', count: readyCount },
   ]
@@ -109,7 +109,7 @@ export default function KitchenTabs({
         tabs={mainTabs}
         activeTab={activeTab}
         onTabChange={(id) => {
-          onTabChange(id as KitchenTab)
+          onTabChange(id)
           setDropdownOpen(false)
         }}
         layoutId="activeTab"

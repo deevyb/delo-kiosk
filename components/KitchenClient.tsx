@@ -19,10 +19,30 @@ interface KitchenClientProps {
 
 /** How often the display re-checks the database, regardless of realtime's state. */
 const SYNC_INTERVAL_MS = 30_000
-/** How far back each sync looks — covers a full event, and uses idx_orders_created_at. */
-const SYNC_WINDOW_MS = 12 * 60 * 60 * 1000
+/** Comfortably more than one event's orders, so the newest rows are always covered. */
+const SYNC_ROW_LIMIT = 200
 /** A hung request has to fail rather than silently stall the safety net. */
 const SYNC_TIMEOUT_MS = 10_000
+
+/** Parse defensively: an unrecognised shape is passed through rather than thrown on. */
+function toIso(value: string): string {
+  const parsed = Date.parse(value)
+  return Number.isNaN(parsed) ? value : new Date(parsed).toISOString()
+}
+
+/**
+ * Put a realtime row's timestamps into the ISO form every other path already delivers.
+ *
+ * Realtime passes `timestamptz` through as raw Postgres text (`2026-08-01 19:16:56+00`)
+ * where PostgREST renders ISO — realtime-js routes `timestamptz` to its `noop` branch on
+ * purpose. Parsing that raw form is implementation-defined, and it reaches `new Date()`
+ * in the sorts, `isToday`, and `formatPrepTime`. A value that parsed to `NaN` would throw
+ * a RangeError out of `Intl.DateTimeFormat` inside a `useMemo` — an error boundary and a
+ * dead kitchen screen mid-rush. Converting once, here, keeps that off every other path.
+ */
+function normalizeRealtimeRow(row: Order): Order {
+  return { ...row, created_at: toIso(row.created_at), updated_at: toIso(row.updated_at) }
+}
 
 /**
  * Upsert incoming rows into the current list, keyed by id.
@@ -35,10 +55,21 @@ const SYNC_TIMEOUT_MS = 10_000
  * Returns `prev` untouched when nothing changed, so React skips the render entirely.
  * That's why a quiet sync (the common case) costs nothing.
  *
- * Rows are compared by `updated_at` equality, never by ordering: `updated_at` is
- * written by Postgres on insert but by the API route's clock on update, so "newer"
- * isn't reliably orderable across the two. Staleness is handled by the write
- * generation in `syncOrders` instead, which needs no clock at all.
+ * `updated_at` is compared as an instant, not as a string. The column is `timestamptz(6)`,
+ * so PostgREST renders microseconds (`…:56.05063+00:00`) while anything that has passed
+ * through a JS `Date` carries milliseconds (`…:56.050Z`). Those never match as text, and
+ * treating every realtime-touched row as changed would rebuild the list — and re-render
+ * all ~150 cards — on every single sync.
+ *
+ * `status` and `claimed_by` are compared alongside it because `updated_at` alone is not a
+ * version: it's millisecond precision written from the API route's clock
+ * (`app/api/orders/[id]/route.ts`), and two Vercel instances drift. Two baristas claiming
+ * the same order can land on the same value, and skipping on that collision would drop the
+ * change on every future sync too — permanently, not just once. Those three fields are the
+ * only ones the PATCH route mutates, so comparing them is exhaustive.
+ *
+ * Never compares by ordering: `updated_at` comes from Postgres on insert but from a
+ * function's clock on update, so "newer" isn't reliably orderable across the two.
  */
 function mergeOrders(prev: Order[], incoming: Order[]): Order[] {
   // Map preserves insertion order, and re-setting an existing key keeps its position,
@@ -48,7 +79,14 @@ function mergeOrders(prev: Order[], incoming: Order[]): Order[] {
 
   for (const row of incoming) {
     const current = byId.get(row.id)
-    if (current && current.updated_at === row.updated_at) continue
+    if (
+      current &&
+      Date.parse(current.updated_at) === Date.parse(row.updated_at) &&
+      current.status === row.status &&
+      current.claimed_by === row.claimed_by
+    ) {
+      continue
+    }
     byId.set(row.id, row)
     changed = true
   }
@@ -92,6 +130,9 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    * tap would restart the 30s timer and re-subscribe the realtime channel.
    */
   const writeGenerationRef = useRef(0)
+
+  /** The sync currently in flight, so a second trigger can stand down and unmount can abort. */
+  const syncInFlightRef = useRef<AbortController | null>(null)
 
   // Cancel confirmation modal
   const [confirmCancel, setConfirmCancel] = useState<Order | null>(null)
@@ -186,29 +227,55 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    * so its identity is stable and the interval below never restarts.
    */
   const syncOrders = useCallback(async () => {
+    // One sync at a time. Without this, an older response can land after a newer one and
+    // revert a card — and the generation guard below structurally cannot catch that,
+    // because it only counts writes made on *this* iPad. Another barista's write arrives
+    // through neither channel while realtime is down, which is exactly when this runs.
+    // It also stops the three triggers stacking on a wake-up, when the link is weakest.
+    if (syncInFlightRef.current) return
+
     const generation = writeGenerationRef.current
-    const since = new Date(Date.now() - SYNC_WINDOW_MS).toISOString()
     // AbortController rather than AbortSignal.timeout — the latter is Safari 16+ and
     // would throw on every tick on an older iPad, silently disabling the safety net.
     const controller = new AbortController()
+    syncInFlightRef.current = controller
     const timeout = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS)
 
     try {
+      // Newest rows by count, not by a time window: a window would have to be measured
+      // from the iPad's clock against timestamps written by the server, so a device with
+      // a badly-set clock could quietly fetch nothing at all and still look healthy.
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(SYNC_ROW_LIMIT)
         .abortSignal(controller.signal)
 
+      // Note: an aborted or failed request resolves here with `error` set — the Supabase
+      // client converts rejections into a result — so this is the branch to hang any
+      // staleness reporting off, not the `catch` below.
       if (error || !data) return
-      // A tap or realtime update landed while this was in flight, so these rows may
-      // predate it. Drop them rather than reverting a card; the next tick re-syncs.
-      if (writeGenerationRef.current !== generation) return
-      setOrders((prev) => mergeOrders(prev, data as Order[]))
+
+      const rows = data as Order[]
+      // A tap or realtime update landed while this was in flight, so rows we already hold
+      // may predate it and would revert a card. Rows we've never seen can't revert
+      // anything, so they still get applied — otherwise a busy rush, where taps are
+      // constant, is exactly when the safety net stops delivering missed orders.
+      const stale = writeGenerationRef.current !== generation
+      setOrders((prev) => {
+        if (!stale) return mergeOrders(prev, rows)
+        const known = new Set(prev.map((order) => order.id))
+        return mergeOrders(
+          prev,
+          rows.filter((row) => !known.has(row.id))
+        )
+      })
     } catch {
-      // Offline, aborted, or refused — the next tick tries again.
+      // Defensive only — the client resolves rather than rejects on network failure.
     } finally {
       clearTimeout(timeout)
+      syncInFlightRef.current = null
     }
   }, [])
 
@@ -229,25 +296,34 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
         }
         // INSERT and UPDATE go through the same upsert as the sync, so an order
         // delivered by both paths can never appear twice.
-        const row = payload.new as Order
+        const row = normalizeRealtimeRow(payload.new as Order)
         setOrders((prev) => mergeOrders(prev, [row]))
       })
       .subscribe((status) => {
         setIsConnected(status === 'SUBSCRIBED')
-        // Whatever happened while the channel was down was never delivered — catch up.
-        if (status === 'SUBSCRIBED') syncOrders()
       })
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [syncOrders])
+    // Deliberately empty, and it must stay that way: anything reactive in here tears the
+    // channel down and rejoins it. The catch-up sync lives in its own effect below rather
+    // than in the callback above so that this list can never grow.
+  }, [])
 
   /**
    * Fixed-cadence sync, plus an immediate catch-up whenever the screen comes back into
    * view — iOS freezes timers while the iPad is asleep or the tab is backgrounded, so
    * the visibility trigger is the real recovery path after a screen lock.
    */
+  useEffect(() => {
+    // Runs on mount, and again every time the channel comes back after a drop: whatever
+    // happened while it was down was never delivered, so catch up. Driven off the
+    // connection state rather than the subscribe callback so the channel effect above
+    // can keep an empty dependency list.
+    if (isConnected) syncOrders()
+  }, [isConnected, syncOrders])
+
   useEffect(() => {
     const syncIfVisible = () => {
       if (document.visibilityState === 'visible') syncOrders()
@@ -259,11 +335,12 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
     return () => {
       clearInterval(interval)
       document.removeEventListener('visibilitychange', syncIfVisible)
+      syncInFlightRef.current?.abort()
     }
   }, [syncOrders])
 
   /**
-   * Update an order's status via API and optimistically update local state
+   * Update an order's status via the API, then apply the row the server sends back.
    */
   const updateOrderStatus = useCallback(
     async (
@@ -296,7 +373,10 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
       } catch {
         setError(errorMessage)
       } finally {
-        setUpdatingOrderId(null)
+        // Only clear if this order is still the one showing a spinner — a tap on a second
+        // order takes the slot, and clearing it blindly would re-enable that card's
+        // buttons while its own request was still in flight.
+        setUpdatingOrderId((current) => (current === orderId ? null : current))
       }
     },
     []
