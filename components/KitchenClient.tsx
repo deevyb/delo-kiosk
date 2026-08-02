@@ -15,6 +15,8 @@ import ResponsiveModal from './ResponsiveModal'
 
 interface KitchenClientProps {
   initialOrders: Order[]
+  /** The server couldn't reach the database, so `initialOrders` is empty but not truthful. */
+  initialLoadFailed?: boolean
 }
 
 /** How often the display re-checks the database, regardless of realtime's state. */
@@ -101,7 +103,10 @@ function mergeOrders(prev: Order[], incoming: Order[]): Order[] {
   return changed ? Array.from(byId.values()) : prev
 }
 
-export default function KitchenClient({ initialOrders }: KitchenClientProps) {
+export default function KitchenClient({
+  initialOrders,
+  initialLoadFailed = false,
+}: KitchenClientProps) {
   // Multi-barista mode: detect via URL param
   const searchParams = useSearchParams()
   const baristaName = searchParams.get('barista') || ''
@@ -122,8 +127,16 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   // Realtime connection status
   const [isConnected, setIsConnected] = useState(true)
 
-  /** Consecutive failed syncs, capped at SYNC_FAILURES_BEFORE_ALARM. */
-  const [syncFailures, setSyncFailures] = useState(0)
+  /**
+   * Consecutive failed syncs, capped at SYNC_FAILURES_BEFORE_ALARM.
+   *
+   * Starts at the threshold when the server's own fetch failed, so the banner is already
+   * up on the first paint rather than the display quietly claiming an empty queue. The
+   * mount sync clears it the moment the database answers.
+   */
+  const [syncFailures, setSyncFailures] = useState(
+    initialLoadFailed ? SYNC_FAILURES_BEFORE_ALARM : 0
+  )
 
   // Track which order is being updated (prevents double-taps)
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)

@@ -27,7 +27,11 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
   const handleRetry = async () => {
     setChecking(true)
     try {
-      await onRetry()
+      // The floor matters more than it looks. A refused connection or a captive portal
+      // fails in microtasks, and React batches the two setStates into one render — so
+      // without it the label never paints at all and the tap goes unacknowledged. A
+      // barista who thinks the button is dead taps it repeatedly and stops trusting it.
+      await Promise.all([onRetry(), new Promise((resolve) => setTimeout(resolve, 400))])
     } finally {
       setChecking(false)
     }
