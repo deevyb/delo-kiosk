@@ -16,7 +16,6 @@ export default function KitchenError({ error }: { error: Error & { digest?: stri
 
   return (
     <ErrorFallback
-      error={error}
       // Next's `reset()` only re-renders this boundary on the client — it does not re-run
       // the server fetch that failed, so it would recur instantly and the button would
       // read as dead. A full reload is what actually retries, and on a kiosk display

@@ -1,7 +1,6 @@
 'use client'
 
 interface ErrorFallbackProps {
-  error: Error
   resetErrorBoundary: () => void
   /** Defaults speak to a customer; the barista-facing screens pass their own. */
   title?: string
@@ -11,7 +10,6 @@ interface ErrorFallbackProps {
 }
 
 export default function ErrorFallback({
-  error,
   resetErrorBoundary,
   title = 'Something went wrong',
   message = "We hit a small bump. Don't worry — your order is safe. Let's try that again.",

@@ -21,6 +21,8 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
   const [checking, setChecking] = useState(false)
   const reduceMotion = useReducedMotion()
   const unreachable = status === 'unreachable'
+  /** Shared by initial and exit, so the banner leaves the way it arrived. */
+  const offscreen = reduceMotion ? { opacity: 0 } : { opacity: 0, y: -40 }
 
   const handleRetry = async () => {
     setChecking(true)
@@ -37,9 +39,9 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
     <AnimatePresence>
       {status !== 'live' && (
         <motion.div
-          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -40 }}
+          initial={offscreen}
           animate={{ opacity: 1, y: 0 }}
-          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -40 }}
+          exit={offscreen}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           role={unreachable ? 'alert' : 'status'}
           aria-live={unreachable ? 'assertive' : 'polite'}
@@ -103,12 +105,11 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
                 onClick={handleRetry}
                 disabled={checking}
                 whileTap={{ scale: 0.97 }}
-                // 44px minimum: this is the one control a barista reaches for in a hurry.
-                className="ml-auto flex-shrink-0 font-manrope text-sm font-semibold min-h-[44px] px-4 rounded-lg
-                           bg-delo-maroon text-delo-cream transition-colors hover:bg-delo-maroon/90
-                           disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2
-                           focus-visible:ring-delo-maroon focus-visible:ring-offset-1
-                           focus-visible:ring-offset-delo-cream"
+                // btn-compact already carries the 44px minimum — this is the one control a
+                // barista reaches for in a hurry, so it has to be thumb-sized.
+                className="btn-compact ml-auto disabled:opacity-50 focus-visible:outline-none
+                           focus-visible:ring-2 focus-visible:ring-delo-maroon
+                           focus-visible:ring-offset-1 focus-visible:ring-offset-delo-cream"
               >
                 {checking ? 'Checking…' : 'Retry'}
               </motion.button>

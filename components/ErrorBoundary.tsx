@@ -33,7 +33,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
 
   render() {
     if (this.state.hasError && this.state.error) {
-      return <ErrorFallback error={this.state.error} resetErrorBoundary={this.resetErrorBoundary} />
+      return <ErrorFallback resetErrorBoundary={this.resetErrorBoundary} />
     }
 
     return this.props.children
