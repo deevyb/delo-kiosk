@@ -8,7 +8,7 @@ import { Order, OrderStatus, supabase } from '@/lib/supabase'
 import { isToday } from '@/lib/dateUtils'
 import OrderCard from './OrderCard'
 import KitchenTabs, { KitchenTab } from './KitchenTabs'
-import ConnectionStatus from './ConnectionStatus'
+import ConnectionStatus, { type KitchenConnection } from './ConnectionStatus'
 import NavMenu from './NavMenu'
 import SplitQueueLayout from './SplitQueueLayout'
 import ResponsiveModal from './ResponsiveModal'
@@ -115,6 +115,14 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   // Realtime connection status
   const [isConnected, setIsConnected] = useState(true)
 
+  /**
+   * Consecutive failed syncs. Two in a row — 30s apart, so ~30-40s of no contact once a
+   * hung request has timed out — is what separates "realtime dropped but orders are still
+   * arriving" from "nothing is getting through". Very different things to tell a barista
+   * mid-rush, and one failure alone is too twitchy on venue WiFi to alarm anyone with.
+   */
+  const [syncFailures, setSyncFailures] = useState(0)
+
   // Track which order is being updated (prevents double-taps)
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
@@ -131,8 +139,11 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    */
   const writeGenerationRef = useRef(0)
 
-  /** The sync currently in flight, so a second trigger can stand down and unmount can abort. */
+  /** The sync currently in flight, so unmount can abort it. */
   const syncInFlightRef = useRef<AbortController | null>(null)
+
+  /** That same sync as a promise, so a second caller joins it instead of starting another. */
+  const syncPromiseRef = useRef<Promise<void> | null>(null)
 
   // Cancel confirmation modal
   const [confirmCancel, setConfirmCancel] = useState<Order | null>(null)
@@ -206,6 +217,11 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   const readyCount = readyOrders.length
   const cancelledCount = canceledOrders.length
 
+  // Realtime dropping on its own is no longer worth alarming anyone about — the sync
+  // covers it. Only repeated sync failures mean orders could genuinely be missing.
+  const connectionStatus: KitchenConnection =
+    syncFailures >= 2 ? 'unreachable' : isConnected ? 'live' : 'delayed'
+
   // Filtered in-progress orders for multi-barista "mine only" toggle
   const displayedInProgressOrders = useMemo(
     () =>
@@ -226,57 +242,75 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
    * Deliberately has no dependencies: everything it reads lives in a ref or module scope,
    * so its identity is stable and the interval below never restarts.
    */
-  const syncOrders = useCallback(async () => {
+  const syncOrders = useCallback((): Promise<void> => {
     // One sync at a time. Without this, an older response can land after a newer one and
     // revert a card — and the generation guard below structurally cannot catch that,
     // because it only counts writes made on *this* iPad. Another barista's write arrives
     // through neither channel while realtime is down, which is exactly when this runs.
     // It also stops the three triggers stacking on a wake-up, when the link is weakest.
-    if (syncInFlightRef.current) return
+    //
+    // A second caller gets back the attempt already running rather than nothing, so the
+    // banner's "Try now" waits for a real result instead of resolving instantly and
+    // looking dead — a failing sync can hold this slot for the full 10s timeout.
+    if (syncPromiseRef.current) return syncPromiseRef.current
 
-    const generation = writeGenerationRef.current
-    // AbortController rather than AbortSignal.timeout — the latter is Safari 16+ and
-    // would throw on every tick on an older iPad, silently disabling the safety net.
-    const controller = new AbortController()
-    syncInFlightRef.current = controller
-    const timeout = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS)
+    const run = async () => {
+      const generation = writeGenerationRef.current
+      // AbortController rather than AbortSignal.timeout — the latter is Safari 16+ and
+      // would throw on every tick on an older iPad, silently disabling the safety net.
+      const controller = new AbortController()
+      syncInFlightRef.current = controller
+      const timeout = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS)
 
-    try {
-      // Newest rows by count, not by a time window: a window would have to be measured
-      // from the iPad's clock against timestamps written by the server, so a device with
-      // a badly-set clock could quietly fetch nothing at all and still look healthy.
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(SYNC_ROW_LIMIT)
-        .abortSignal(controller.signal)
+      try {
+        // Newest rows by count, not by a time window: a window would have to be measured
+        // from the iPad's clock against timestamps written by the server, so a device with
+        // a badly-set clock could quietly fetch nothing at all and still look healthy.
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(SYNC_ROW_LIMIT)
+          .abortSignal(controller.signal)
 
-      // Note: an aborted or failed request resolves here with `error` set — the Supabase
-      // client converts rejections into a result — so this is the branch to hang any
-      // staleness reporting off, not the `catch` below.
-      if (error || !data) return
+        // An aborted or failed request resolves here with `error` set — the Supabase
+        // client converts rejections into a result — so this, not the `catch` below, is
+        // the branch that actually runs when the network is down.
+        if (error || !data) {
+          setSyncFailures((n) => n + 1)
+          return
+        }
+        setSyncFailures(0)
 
-      const rows = data as Order[]
-      // A tap or realtime update landed while this was in flight, so rows we already hold
-      // may predate it and would revert a card. Rows we've never seen can't revert
-      // anything, so they still get applied — otherwise a busy rush, where taps are
-      // constant, is exactly when the safety net stops delivering missed orders.
-      const stale = writeGenerationRef.current !== generation
-      setOrders((prev) => {
-        if (!stale) return mergeOrders(prev, rows)
-        const known = new Set(prev.map((order) => order.id))
-        return mergeOrders(
-          prev,
-          rows.filter((row) => !known.has(row.id))
-        )
-      })
-    } catch {
-      // Defensive only — the client resolves rather than rejects on network failure.
-    } finally {
-      clearTimeout(timeout)
-      syncInFlightRef.current = null
+        const rows = data as Order[]
+        // A tap or realtime update landed while this was in flight, so rows we already
+        // hold may predate it and would revert a card. Rows we've never seen can't revert
+        // anything, so they still get applied — otherwise a busy rush, where taps are
+        // constant, is exactly when the safety net stops delivering missed orders.
+        const stale = writeGenerationRef.current !== generation
+        setOrders((prev) => {
+          if (!stale) return mergeOrders(prev, rows)
+          const known = new Set(prev.map((order) => order.id))
+          return mergeOrders(
+            prev,
+            rows.filter((row) => !known.has(row.id))
+          )
+        })
+      } catch {
+        // Defensive only — the client resolves rather than rejects on network failure.
+      } finally {
+        clearTimeout(timeout)
+        syncInFlightRef.current = null
+      }
     }
+
+    // Cleared in a chained `.finally` rather than inside `run` so the assignment below
+    // always happens first, whatever `run` does before its first await.
+    const promise = run().finally(() => {
+      syncPromiseRef.current = null
+    })
+    syncPromiseRef.current = promise
+    return promise
   }, [])
 
   /**
@@ -456,7 +490,7 @@ export default function KitchenClient({ initialOrders }: KitchenClientProps) {
   return (
     <div className="min-h-screen bg-delo-cream">
       {/* Connection status banner */}
-      <ConnectionStatus isConnected={isConnected} />
+      <ConnectionStatus status={connectionStatus} onRetry={syncOrders} />
 
       {/* Header */}
       <header className="px-4 pt-4 pb-2 md:px-8 md:pt-8 md:pb-4">
