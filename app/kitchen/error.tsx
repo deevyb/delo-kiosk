@@ -22,10 +22,10 @@ export default function KitchenError({ error }: { error: Error & { digest?: stri
       // read as dead. A full reload is what actually retries, and on a kiosk display
       // there's nothing worth preserving across it.
       resetErrorBoundary={() => window.location.reload()}
-      title="Can't load the display"
-      message="Orders already placed are safe. Try loading the display again."
-      actionLabel="Reload display"
-      footnote="If this keeps happening, check the internet connection — taking orders may be affected too."
+      title="Offline"
+      message="Every order is still saved — nothing has been lost."
+      actionLabel="Reload"
+      footnote="Customers can keep ordering. Their orders will be here when connection restores."
     />
   )
 }

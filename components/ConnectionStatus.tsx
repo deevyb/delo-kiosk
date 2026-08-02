@@ -87,13 +87,13 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
             >
               {unreachable ? (
                 <>
-                  <span className="font-semibold">Can&apos;t reach the server</span> — new orders
-                  aren&apos;t coming through
+                  <span className="font-semibold">Offline</span> — new orders aren&apos;t coming
+                  through
                 </>
               ) : (
                 <>
-                  <span className="font-semibold">Live updates paused</span> — new orders may take
-                  up to 30 seconds
+                  <span className="font-semibold">Updates delayed</span> — new orders may take up to
+                  30 seconds
                 </>
               )}
             </p>
@@ -110,7 +110,7 @@ export default function ConnectionStatus({ status, onRetry }: ConnectionStatusPr
                            focus-visible:ring-delo-maroon focus-visible:ring-offset-1
                            focus-visible:ring-offset-delo-cream"
               >
-                {checking ? 'Checking…' : 'Try now'}
+                {checking ? 'Checking…' : 'Retry'}
               </motion.button>
             )}
           </div>
