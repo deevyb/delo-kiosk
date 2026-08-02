@@ -212,17 +212,47 @@ Batch updates `display_order` for drag-and-drop reordering:
 
 ```typescript
 supabase
-  .channel('orders')
+  .channel('kitchen-orders')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, handleOrderChange)
   .subscribe()
 ```
 
 ### Fallback Strategy
 
-- If WebSocket disconnects, show "Reconnecting..." banner
-- Fall back to polling every 5 seconds
-- Auto-reconnect when connection restored
-- Never lose orders — they persist in database regardless
+Realtime is treated as an optimisation, not the source of truth. It never delivers what
+happened while the socket was down, and a socket can stay open while silently delivering
+nothing (the usual outcome after an iPad sleeps or WiFi hands off). So the display also
+re-reads the database on a fixed cadence, regardless of what realtime thinks its state is.
+
+- **Every 30s** (`SYNC_INTERVAL_MS`), plus immediately whenever the screen becomes visible
+  and whenever the channel reconnects. The interval is gated on `document.visibilityState`
+  so a backgrounded display costs nothing.
+- Each sync fetches the **newest 200 rows by `created_at`**, not a time window — a window
+  would have to be measured against the iPad's clock, and a device with a badly-set clock
+  would silently fetch nothing while looking healthy.
+- Results go through `mergeOrders`, an id-keyed upsert shared by every write path
+  (sync, realtime, and the response to a barista's own tap). One merge is what stops an
+  order appearing twice when two paths deliver it.
+- A 10s `AbortController` timeout means a hung request fails rather than stalling the net.
+- Only one sync runs at a time. Overlapping syncs can land out of order and revert a card,
+  and the write-generation guard cannot catch that — it only counts writes made on _this_
+  iPad, and the case that matters is another barista's write during an outage.
+- Orders persist in the database regardless; the sync is what makes them _visible_ again
+  without anyone reloading the page.
+
+### Connection Banner
+
+Three states, because "realtime is down" no longer means "orders are missing":
+
+| State         | Condition                       | What the barista sees                       |
+| ------------- | ------------------------------- | ------------------------------------------- |
+| `live`        | Connected                       | Nothing                                     |
+| `delayed`     | Realtime down, syncs succeeding | Quiet notice: new orders may take up to 30s |
+| `unreachable` | 2 consecutive sync failures     | Maroon warning + Try now                    |
+
+Note when instrumenting this: a failed or aborted Supabase query **resolves with an
+`error`** rather than rejecting, so failure counting belongs in the `if (error)` branch —
+a `catch` block here is effectively dead code.
 
 ---
 
@@ -290,23 +320,23 @@ Using Framer Motion throughout for consistency:
 
 ## Testing Strategy
 
-### Unit Tests (Vitest)
+**There is no test framework installed, and that is a deliberate choice** — this is a small
+app with one operator, and the cost of maintaining a suite has not been worth it. Earlier
+versions of this document described a Vitest and Playwright setup that never existed; don't
+plan work around it.
 
-- Utility functions
-- Data transformations
-- Validation logic
+What substitutes for tests:
 
-### Integration Tests
+- **Reviews before merge.** Risky logic (anything touching order state or the sync) gets
+  reviewed from several independent angles rather than once — the kitchen sync work found
+  three separate defects that way, each caught by a different reviewer.
+- **Throwaway assertion scripts.** For pure functions like `mergeOrders`, a plain Node
+  script mirroring the logic is cheap and catches real bugs. Run it, read it, delete it.
+- **Measured browser verification** rather than "looks right" — count network requests,
+  time how long a recovery takes, and check the numbers instead of trusting a screenshot.
 
-- API routes
-- Database operations
-- Realtime subscriptions (mocked)
-
-### E2E Tests (Playwright)
-
-- Complete customer order flow
-- Kitchen status updates
-- Admin menu management
+If a suite is ever added, the highest-value targets are `mergeOrders`, the sync's staleness
+handling, and `dateUtils`.
 
 ### Manual Testing Checklist
 

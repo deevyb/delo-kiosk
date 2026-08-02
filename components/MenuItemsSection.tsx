@@ -307,7 +307,7 @@ export default function MenuItemsSection({
         <motion.button
           onClick={() => setShowNewForm(true)}
           whileTap={{ scale: 0.97 }}
-          className="btn-admin-add ml-4"
+          className="btn-compact ml-4"
         >
           + Add Item
         </motion.button>

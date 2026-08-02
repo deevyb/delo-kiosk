@@ -15,7 +15,6 @@ interface OrderCardProps {
   onRestore?: (orderId: string) => void
   onCancelClick: () => void
   isUpdating: boolean
-  isNew?: boolean
   // Multi-barista props
   isMultiBarista?: boolean
   currentBarista?: string
@@ -45,7 +44,6 @@ export default function OrderCard({
   onRestore,
   onCancelClick,
   isUpdating,
-  isNew = false,
   isMultiBarista = false,
   currentBarista,
   onMarkInProgress,

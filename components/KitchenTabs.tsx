@@ -2,8 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { OrderStatus } from '@/lib/supabase'
 import PillTabs, { PillTab } from './PillTabs'
+
+/**
+ * Tabs the kitchen display can actually show. Narrower than OrderStatus on purpose:
+ * `in_progress` orders live inside the Queue tab (folded in solo mode, split out in
+ * multi-barista mode) and are never a tab of their own.
+ */
+export type KitchenTab = 'placed' | 'ready' | 'canceled'
 
 function DropdownToggle({
   label,
@@ -50,8 +56,8 @@ function DropdownSectionLabel({ label }: { label: string }) {
 }
 
 interface KitchenTabsProps {
-  activeTab: OrderStatus
-  onTabChange: (tab: OrderStatus) => void
+  activeTab: KitchenTab
+  onTabChange: (tab: KitchenTab) => void
   placedCount: number
   readyCount: number
   cancelledCount: number
@@ -89,7 +95,7 @@ export default function KitchenTabs({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [dropdownOpen])
 
-  const mainTabs: PillTab[] = [
+  const mainTabs: PillTab<KitchenTab>[] = [
     { id: 'placed', label: 'Queue', count: placedCount },
     { id: 'ready', label: 'Ready', count: readyCount },
   ]
@@ -103,7 +109,7 @@ export default function KitchenTabs({
         tabs={mainTabs}
         activeTab={activeTab}
         onTabChange={(id) => {
-          onTabChange(id as OrderStatus)
+          onTabChange(id)
           setDropdownOpen(false)
         }}
         layoutId="activeTab"
