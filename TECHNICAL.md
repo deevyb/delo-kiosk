@@ -385,30 +385,6 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 - **GitHub:** https://github.com/deevyb/delo-kiosk
 - **Supabase:** Project `wryykcdqojftbqgtxpgu` (us-west-2)
 
-### Vercel Setup ✅ Complete
-
-1. ~~Connect GitHub repository~~ — Connected to `deevyb/delo-kiosk`
-2. ~~Set environment variables~~ — SUPABASE_URL, ANON_KEY, ADMIN_PASSCODE
-3. ~~Deploy~~ — Auto-deploys on push to main
-
-### Supabase Setup ✅ Complete
-
-1. ~~Create project~~ — `delo-kiosk` in us-west-2
-2. ~~Run migrations~~ — 4 migrations applied (tables + realtime)
-3. ~~Enable Realtime on `orders` table~~ — Enabled via migration
-4. ~~Copy connection credentials to Vercel~~ — Done
-
-### Pre-Launch Checklist
-
-- [x] All env vars set in Vercel
-- [x] Supabase Realtime enabled
-- [x] Menu items seeded (7 drinks)
-- [x] Modifiers seeded (Regular/Oat milk, Hot/Iced)
-- [ ] Test order on production
-- [ ] Test kitchen display updates
-- [ ] Test admin access
-- [ ] iPad configured for kiosk mode (Guided Access)
-
 ---
 
 ## Known Limitations (MVP)
@@ -416,19 +392,6 @@ NEXT_PUBLIC_APP_URL=https://delo-kiosk-buwhagfrm-deevys-projects.vercel.app
 1. **Single passcode for all admins** — acceptable for 2-person team
 2. **No offline order queue** — requires internet to submit
 3. **No order editing** — customer must place new order if mistake
-4. **No analytics** — CSV export only for post-event analysis
-5. **No photo upload UI** — images require URL input
-
----
-
-## Future Improvements (Post-MVP)
-
-- Order search/filter on kitchen display
-- Photo upload for menu items
-- Multiple modifier categories (size, extras)
-- Order history/analytics dashboard
-- Multi-location support
-- Staff roles and permissions
 
 ---
 
