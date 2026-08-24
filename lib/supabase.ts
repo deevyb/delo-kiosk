@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
+import type { TimingSummary } from './orderTiming'
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -77,9 +79,14 @@ export interface ModifierOption {
   percentage: number
 }
 
+export interface TimingStats extends TimingSummary {
+  previousEvent: { date: string; p90Seconds: number } | null
+}
+
 export interface DashboardStats {
   today: OrderCounts
   allTime: OrderCounts
   popularDrinks: DrinkCount[]
   modifierBreakdown: Record<string, ModifierOption[]>
+  timing: TimingStats | null
 }

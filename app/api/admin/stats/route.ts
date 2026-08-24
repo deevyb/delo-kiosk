@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { summarize, TimedOrderInput } from '@/lib/orderTiming'
+import { utcRangeForLocalDay } from '@/lib/dateUtils'
 
 // Disable caching for fresh stats on every request
 export const dynamic = 'force-dynamic'
@@ -10,37 +12,56 @@ export const dynamic = 'force-dynamic'
  * - Order counts (today + all-time) with status breakdown
  * - Popular drinks (top 20)
  * - Modifier preferences with percentages
+ * - Wait timing for the selected event date, plus the previous event's p90
  */
 export async function GET(request: Request) {
   try {
-    // Fetch all orders for aggregation
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('item, modifiers, status, created_at')
-
-    if (error) throw error
-
-    const allOrders = orders || []
-
-    // Determine "today" in the client's timezone (falls back to America/Los_Angeles)
     const { searchParams } = new URL(request.url)
     const timezone = searchParams.get('timezone') || 'America/Los_Angeles'
     const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: timezone })
-    const today = dateFmt.format(new Date()) // YYYY-MM-DD in client's timezone
-
-    // Use selected date or default to today
+    const today = dateFmt.format(new Date())
     const targetDate = searchParams.get('date') || today
+    const isViewingToday = targetDate === today
+    const { startIso, endIso } = utcRangeForLocalDay(targetDate, timezone)
 
-    // Orders on the target date
-    const targetDateOrders = allOrders.filter(
-      (o) => dateFmt.format(new Date(o.created_at)) === targetDate
-    )
+    // Bounded queries only. The old select-everything shape silently truncated
+    // at PostgREST's 1,000-row default — timing math on a quietly truncated
+    // dataset produces confidently wrong numbers (spec, Build §3).
+    const ORDER_COLUMNS = 'id, item, modifiers, status, created_at, ready_at, claimed_by'
+    const STATUSES = ['placed', 'in_progress', 'ready', 'canceled'] as const
 
-    // Orders up to and including the target date
-    const upToOrders = allOrders.filter((o) => dateFmt.format(new Date(o.created_at)) <= targetDate)
+    const [targetRes, trendRes, ...countResults] = await Promise.all([
+      supabase
+        .from('orders')
+        .select(ORDER_COLUMNS)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso)
+        .order('created_at', { ascending: true })
+        .limit(1000),
+      // All-time trends when viewing today (existing quirk, deliberately kept —
+      // backlog #9's business). Newest-first so an explicit cap keeps recent
+      // events rather than the oldest.
+      isViewingToday
+        ? supabase
+            .from('orders')
+            .select('item, modifiers')
+            .order('created_at', { ascending: false })
+            .limit(5000)
+        : Promise.resolve({ data: null, error: null }),
+      ...STATUSES.map((status) =>
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', status)
+          .lt('created_at', endIso)
+      ),
+    ])
 
-    // Count orders by status
-    const countByStatus = (orderList: typeof allOrders) => {
+    if (targetRes.error) throw targetRes.error
+    if (trendRes.error) throw trendRes.error
+    const targetDateOrders = targetRes.data || []
+
+    const countByStatus = (orderList: { status: string }[]) => {
       return orderList.reduce(
         (acc, order) => {
           acc.total++
@@ -54,10 +75,15 @@ export async function GET(request: Request) {
       )
     }
 
-    // When viewing today, show all-time trends (so dashboard isn't blank on non-event days).
-    // When viewing a past date, scope trends to that date only.
-    const isViewingToday = targetDate === today
-    const ordersForTrends = isViewingToday ? allOrders : targetDateOrders
+    const allTime = { total: 0, placed: 0, in_progress: 0, ready: 0, canceled: 0 }
+    STATUSES.forEach((status, i) => {
+      const result = countResults[i]
+      if (result.error) throw result.error
+      allTime[status] = result.count ?? 0
+    })
+    allTime.total = allTime.placed + allTime.in_progress + allTime.ready + allTime.canceled
+
+    const ordersForTrends = isViewingToday ? trendRes.data || [] : targetDateOrders
 
     // Popular drinks - group by item name, sort by count
     const drinkCounts: Record<string, number> = {}
@@ -77,7 +103,7 @@ export async function GET(request: Request) {
       if (!order.modifiers) continue
 
       for (const [category, option] of Object.entries(order.modifiers)) {
-        if (!option) continue // Skip null/undefined values
+        if (!option) continue
 
         if (!modifierCounts[category]) modifierCounts[category] = {}
         modifierCounts[category][option as string] =
@@ -85,7 +111,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Convert to array with percentages
     const modifierBreakdown: Record<
       string,
       { option: string; count: number; percentage: number }[]
@@ -103,11 +128,45 @@ export async function GET(request: Request) {
         .sort((a, b) => b.count - a.count)
     }
 
+    // Timing — always scoped to the single selected event date.
+    const summary = summarize(targetDateOrders as TimedOrderInput[])
+    let timing = null
+    if (summary) {
+      // Previous event, for the headline delta: the most recent order before
+      // this day names the date; that day's own summary provides the p90.
+      let previousEvent = null
+      const probe = await supabase
+        .from('orders')
+        .select('created_at')
+        .lt('created_at', startIso)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      const probeRow = probe.data?.[0]
+      if (!probe.error && probeRow) {
+        const prevDate = dateFmt.format(new Date(probeRow.created_at))
+        const prevRange = utcRangeForLocalDay(prevDate, timezone)
+        const prevRes = await supabase
+          .from('orders')
+          .select(ORDER_COLUMNS)
+          .gte('created_at', prevRange.startIso)
+          .lt('created_at', prevRange.endIso)
+          .limit(1000)
+        const prevSummary = prevRes.error
+          ? null
+          : summarize((prevRes.data || []) as TimedOrderInput[])
+        if (prevSummary) {
+          previousEvent = { date: prevDate, p90Seconds: prevSummary.p90Seconds }
+        }
+      }
+      timing = { ...summary, previousEvent }
+    }
+
     return NextResponse.json({
       today: countByStatus(targetDateOrders),
-      allTime: countByStatus(upToOrders),
+      allTime,
       popularDrinks,
       modifierBreakdown,
+      timing,
     })
   } catch (error) {
     console.error('Error fetching stats:', error)
