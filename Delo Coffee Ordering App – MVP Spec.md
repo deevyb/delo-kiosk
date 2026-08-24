@@ -95,7 +95,7 @@ Delo Coffee needs a minimal iPad ordering system for single-item pop-up orders. 
 
 - **Confirmation State:** Brief full-screen message: "Your order has been sent". Auto-reset to initial menu after 3 seconds.
 
-- **Tap to Pay Confirmation (optional, per event):** Opening `/order?pay=1` with the Venmo env vars set swaps the confirmation for a customer-facing payment screen (flat price, NFC tap-under cue, QR fallback, manual dismiss + 60s safety reset); plain `/order` is unchanged. Setup: `docs/tap-to-pay-setup.md`.
+- **Tap to Pay Confirmation (optional, per event):** Opening `/order?pay=1` with the Venmo env vars set swaps the confirmation for a customer-facing payment screen (flat price in the Venmo link, NFC tap-under cue, QR fallback, manual dismiss + 60s safety reset); plain `/order` is unchanged. Setup: `docs/tap-to-pay-setup.md`.
 
 - **No Cart:** Single item per order only. No multi-item support, no cart icon, no order editing.
 

@@ -11,11 +11,11 @@ before each event.
 ## How it works, in one paragraph
 
 A team member takes the order on their own phone at `/order?pay=1`. When they
-hit Send, the screen turns into a customer-facing payment screen: name, drink,
-price, a QR code, and a big arrow at the bottom saying "Tap your phone under
-here." They flip the phone around to face the customer. The customer holds
-their phone underneath, a Venmo banner pops up, and Venmo opens with your
-handle, the price, and a note already filled in. They hit Pay. Done.
+hit Send, the screen turns into a customer-facing payment screen: name, drink, a
+QR code, and a big arrow at the bottom saying "Tap your phone under here." They
+flip the phone around to face the customer. The customer holds their phone
+underneath, a Venmo banner pops up, and Venmo opens with your handle, the
+price, and a note already filled in. They hit Pay. Done.
 
 The magic is a **sticker**, not the app. A sticker on the back of the
 order-taker's phone holds your Venmo link, and the customer's phone reads it.
@@ -115,7 +115,7 @@ leather, and silicone without any trouble.
 
 | Event type     | Open this      | What the customer sees                                     |
 | -------------- | -------------- | ---------------------------------------------------------- |
-| **Paid** event | `/order?pay=1` | Payment screen after Send: price, QR, tap-under arrow      |
+| **Paid** event | `/order?pay=1` | Payment screen after Send: drink, QR, tap-under arrow      |
 | **Free** event | `/order`       | Today's short "order sent" confirmation, gone in 3 seconds |
 
 Both are on the home page — **Start Ordering** and **Tap to Pay** — and in the
@@ -190,12 +190,14 @@ Five minutes, the morning of:
 - [ ] **A phone with no Venmo installed.** It should land on your `venmo.com`
       profile page in the browser, not an error. Borrow a friend's phone once
       and you'll know for good.
-- [ ] **Check the price on screen** matches the price on the sticker. This is
-      the one that quietly goes wrong after you change a price.
+- [ ] **Check the amount Venmo prefills** against the price you meant to charge
+      today. The sticker and the app each carry their own copy of the price, so
+      this is the one that quietly goes wrong after you change one and forget
+      the other.
 
 If the amount and note stop prefilling, don't cancel the event — the QR and the
-sticker both still open Venmo on your profile, and the payment screen shows the
-drink and the price in big readable type right there for the customer to copy.
+sticker both still open Venmo on your profile, and you tell the customer the
+amount out loud while their drink stays on screen in front of them.
 
 ---
 
@@ -207,5 +209,5 @@ drink and the price in big readable type right there for the customer to copy.
 | Works on some phones, not others    | Move slowly — about a second of contact. iPhones older than the XS can't read a sticker without opening an app; send those customers to the QR |
 | Stopped working on one team phone   | Check for a metal wallet or magnetic mount on the back; move the sticker or use an on-metal one                                                |
 | Sticker feels dead everywhere       | Rewrite it in NFC Tools. If writing fails too, the sticker's damaged — use a spare                                                             |
-| Venmo opens but nothing's filled in | Fine to continue: read the price off the screen. Note it and re-test after the event                                                           |
+| Venmo opens but nothing's filled in | Fine to continue: tell them the price out loud. Note it and re-test after the event                                                            |
 | Anything at all, mid-rush           | Point at the QR code and say "scan this" — it's the same link, and cameras never fail                                                          |
