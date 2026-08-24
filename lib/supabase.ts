@@ -51,6 +51,10 @@ export interface Order {
   claimed_by: string | null
   created_at: string
   updated_at: string
+  /** Set by DB trigger on first claim (multi-barista only); cleared on return to queue. */
+  started_at: string | null
+  /** Set by DB trigger when marked ready; cleared on return to queue. Source of truth for wait timing. */
+  ready_at: string | null
 }
 
 // Dashboard stats types

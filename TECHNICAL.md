@@ -120,7 +120,9 @@ CREATE TABLE orders (
   status TEXT NOT NULL DEFAULT 'placed' CHECK (status IN ('placed', 'in_progress', 'ready', 'canceled')),
   claimed_by TEXT DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  started_at TIMESTAMPTZ,
+  ready_at TIMESTAMPTZ
 );
 
 -- Indexes for performance
@@ -136,6 +138,14 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
 - Denormalized item name in orders for simplicity and historical accuracy
 - Status enum: `placed`, `in_progress`, `ready`, `canceled` — all transitions allowed
 - `claimed_by` (nullable text) tracks which barista claimed an order in multi-barista mode (`/kitchen?barista=name`)
+- `started_at` / `ready_at` are **server-owned**: a `BEFORE UPDATE` trigger
+  (`set_order_timestamps`) ignores client-sent values and stamps them from
+  Postgres's clock — `created_at` also comes from Postgres, so wait durations
+  never subtract two different clocks (`updated_at` is a Vercel function's
+  clock and drifts). `ready_at` is set on transition to `ready`, `started_at`
+  on first claim; both are cleared on any return to `placed`, so a remade
+  drink measures the remake. The trigger also makes the columns forgery-proof
+  despite the public-UPDATE RLS policy (backlog #1).
 
 ---
 
