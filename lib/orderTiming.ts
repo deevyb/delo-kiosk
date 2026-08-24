@@ -155,5 +155,58 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
     }
   }
 
-  return { orders: measurable, model: null } // model arrives in the stranded pass (Task 4)
+  // Stranded pass. The ordering is load-bearing and runs exactly once (spec):
+  // 1. tag clusters from timestamps alone (done above);
+  // 2. fit on servedAlone only — sweeps and held groups must not shape the line;
+  // 3. flag residuals once; never refit, which would slowly eat the legitimate tail.
+  const alone = measurable.filter((o) => o.tag === 'servedAlone')
+  const model = fitFloorAndLine(
+    alone.map((o) => ({ depth: o.queueDepth, waitSeconds: o.waitSeconds }))
+  )
+  if (model) {
+    const residualOf = (o: ClassifiedOrder) =>
+      o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
+    const medianAbsResidual =
+      percentile(
+        alone.map((o) => Math.abs(residualOf(o))),
+        50
+      ) ?? 0
+    const threshold = Math.max(
+      STRANDED_RESIDUAL_MULTIPLIER * medianAbsResidual,
+      MIN_STRANDED_OVERSHOOT_SECONDS
+    )
+    for (const o of measurable) {
+      // Held groups are real waits by definition — long is only suspicious
+      // when nothing explains it.
+      if (o.tag !== 'servedTogether' && residualOf(o) > threshold) o.stranded = true
+    }
+  }
+
+  return { orders: measurable, model }
+}
+
+/**
+ * Least squares of wait on queue depth over served-alone orders.
+ * Returns null rather than nonsense: needs MIN_MODEL_POINTS points, 3+
+ * distinct depths, a positive slope, and a positive floor (spec, Build §2).
+ */
+export function fitFloorAndLine(
+  points: { depth: number; waitSeconds: number }[]
+): QueueModel | null {
+  if (points.length < MIN_MODEL_POINTS) return null
+  if (new Set(points.map((p) => p.depth)).size < 3) return null
+  const n = points.length
+  const meanX = points.reduce((s, p) => s + p.depth, 0) / n
+  const meanY = points.reduce((s, p) => s + p.waitSeconds, 0) / n
+  let sxx = 0
+  let sxy = 0
+  for (const p of points) {
+    sxx += (p.depth - meanX) ** 2
+    sxy += (p.depth - meanX) * (p.waitSeconds - meanY)
+  }
+  if (sxx === 0) return null
+  const slope = sxy / sxx
+  const intercept = meanY - slope * meanX
+  if (slope <= 0 || intercept <= 0) return null
+  return { floorSeconds: intercept, perDrinkSeconds: slope }
 }
