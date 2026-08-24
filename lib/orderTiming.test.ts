@@ -358,3 +358,136 @@ describe('distinct suspect count', () => {
     expect(summary.suspect.suspectCount).toBe(2) // NOT 3
   })
 })
+
+describe('cluster shape', () => {
+  it('a spread-out sweep chained at rush cadence is not a held group', () => {
+    // Cards placed 0/120/240/360s, all bumped together. Every adjacent pair sits
+    // inside PLACED_CLUSTER_SECONDS, so an any-neighbour rule chains them into
+    // one "group" — but a 6-minute ordering span is a cleanup, not a party.
+    const { orders } = classifyOrders([
+      order(0, 1000),
+      order(120, 1005),
+      order(240, 1010),
+      order(360, 1015),
+    ])
+    expect(orders.map((o) => o.tag)).toEqual(['sweep', 'sweep', 'sweep', 'sweep'])
+    expect(orders.every((o) => o.groupSize === null)).toBe(true)
+  })
+
+  it('two parties in one handover window stay two pairs, not one group of four', () => {
+    const fixture = [
+      ...cleanTriplets(6),
+      order(6000, 7000),
+      order(6030, 7005),
+      order(6400, 7010),
+      order(6430, 7015),
+    ]
+    const { orders } = classifyOrders(fixture)
+    const held = orders.filter((o) => o.tag === 'servedTogether')
+    expect(held).toHaveLength(4)
+    expect(held.every((o) => o.groupSize === 2)).toBe(true)
+    const summary = summarize(fixture)!
+    expect(summary.groupCost!.bySize.map((b) => [b.size, b.count])).toEqual([[2, 4]])
+  })
+
+  it('two baristas interleaving handovers never merge into one cluster', () => {
+    // Placements 20s apart, handovers 25s apart alternating hands. Each barista's
+    // own completions are 50s apart, well past READY_CLUSTER_SECONDS, so once
+    // clustering is partitioned by claimed_by the rush stays 20 solo orders.
+    const rush = Array.from({ length: 20 }, (_, i) =>
+      order(i * 20, 500 + i * 25, { claimed_by: i % 2 === 0 ? 'A' : 'B' })
+    )
+    const summary = summarize(rush)!
+    expect(summary.servedTogether.count).toBe(0)
+    expect(summary.suspect.sweepCount).toBe(0)
+    expect(summary.model).not.toBeNull()
+  })
+
+  it('solo mode is untouched: a null claimed_by is one partition', () => {
+    const { orders } = classifyOrders([order(0, 400), order(60, 410), order(120, 420)])
+    expect(orders.every((o) => o.tag === 'servedTogether')).toBe(true)
+  })
+})
+
+describe('queue depth excludes groupmates', () => {
+  it('a party of five alone in an empty cafe is not its own queue', () => {
+    const fixture = [...cleanTriplets(6), ...heldGroup(6000, 5, 6900)]
+    const { orders } = classifyOrders(fixture)
+    const held = orders.filter((o) => o.tag === 'servedTogether')
+    expect(held).toHaveLength(5)
+    // Without the exclusion these read 0,1,2,3,4 and the group's own size gets
+    // mistaken for congestion, which is exactly the axis groupCost splits on.
+    expect(held.map((o) => o.queueDepth)).toEqual([0, 0, 0, 0, 0])
+
+    const cost = summarize(fixture)!.groupCost!
+    expect(cost.overallMedianSeconds).toBeGreaterThan(0)
+    expect(cost.quietMedianSeconds).toBeGreaterThan(0) // all five in one bucket
+    expect(cost.busyMedianSeconds).toBeNull()
+  })
+})
+
+describe('the fit resists leverage', () => {
+  it('a stranded card at a unique extreme depth cannot rotate the line through itself', () => {
+    // 12 clean orders on the 120s + 60s/drink line, then a party of eight is
+    // held while one card is forgotten behind them: placed at depth 8, handed
+    // over 15 minutes later. It is the only point out at that depth, so least
+    // squares swings the whole line toward it, shrinks its own residual to
+    // ~40s, and publishes a per-drink cost of ~95s that nothing else supports.
+    const party = Array.from({ length: 8 }, (_, i) => order(6000 + i * 20, 7000 + i * 5))
+    const forgotten = order(6200, 7100)
+    const { orders, model } = classifyOrders([...cleanTriplets(4), ...party, forgotten])
+    expect(model!.floorSeconds).toBeCloseTo(120, 0)
+    expect(model!.perDrinkSeconds).toBeCloseTo(60, 0)
+    const stranded = orders.filter((o) => o.stranded)
+    expect(stranded).toHaveLength(1)
+    expect(stranded[0].waitSeconds).toBe(900)
+    expect(stranded[0].queueDepth).toBe(8)
+  })
+})
+
+describe('segment comparisons see solo orders only', () => {
+  it('a drink only ever ordered by a held party is not "slower"', () => {
+    // 18 Lattes served one at a time on the line, and a Cortado trio held for
+    // 15 minutes so three friends could take them together. The holding cost is
+    // groupCost's subject; billing it to the Cortado invents a slow drink.
+    const summary = summarize([
+      ...cleanTriplets(6),
+      order(6000, 6900, { item: 'Cortado' }),
+      order(6030, 6905, { item: 'Cortado' }),
+      order(6060, 6910, { item: 'Cortado' }),
+    ])!
+    expect(summary.servedTogether.count).toBe(3)
+    expect(summary.perDrink.find((d) => d.name === 'Cortado')).toBeUndefined()
+    const latte = summary.perDrink.find((d) => d.name === 'Latte')!
+    expect(latte.count).toBe(18)
+    expect(latte.deltaSeconds).toBeCloseTo(0, 0)
+  })
+})
+
+describe('the counterfactual needs something to stand on', () => {
+  /** Placements far enough apart to never link, all bumped in one burst. */
+  const sweepOf = (count: number, firstPlaced: number, firstReady: number) =>
+    Array.from({ length: count }, (_, i) => order(firstPlaced + i * 400, firstReady + i * 10))
+
+  it('stays null when almost the whole day is suspect', () => {
+    // 3 clean orders and a 9-card sweep: "without them the day was 2m 30s" is
+    // the max of three quiet-moment orders wearing a day's worth of authority.
+    const summary = summarize([
+      order(0, 150),
+      order(200, 350),
+      order(400, 550),
+      ...sweepOf(9, 1000, 5000),
+    ])!
+    expect(summary.measured).toBe(12)
+    expect(summary.suspect.suspectCount).toBe(9)
+    expect(summary.suspect.counterfactualP90Seconds).toBeNull()
+  })
+
+  it('reports once enough orders survive the filter', () => {
+    const clean = Array.from({ length: 9 }, (_, i) => order(i * 200, i * 200 + 150))
+    const summary = summarize([...clean, ...sweepOf(3, 3000, 5000)])!
+    expect(summary.measured).toBe(12)
+    expect(summary.suspect.suspectCount).toBe(3)
+    expect(summary.suspect.counterfactualP90Seconds).toBe(150)
+  })
+})

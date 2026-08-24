@@ -32,6 +32,12 @@ export const MIN_STRANDED_OVERSHOOT_SECONDS = 120
 export const STRANDED_RESIDUAL_MULTIPLIER = 3
 /** A drink/temperature needs this many clean orders to appear in comparisons. */
 export const MIN_SEGMENT_ORDERS = 3
+/**
+ * Below this many clean orders there is no counterfactual worth printing: the
+ * "without them" number would be the slowest of a handful of quiet-moment
+ * orders, and it reads as the day the owner nearly had.
+ */
+export const MIN_COUNTERFACTUAL_ORDERS = 5
 
 export interface TimedOrderInput {
   id: string
@@ -40,6 +46,8 @@ export interface TimedOrderInput {
   created_at: string
   ready_at: string | null
   modifiers: { temperature?: string } | null
+  /** Which barista handed it over. Partitions completion clustering (spec, F4). */
+  claimed_by?: string | null
 }
 
 /** Nearest-rank percentile. p50 of an even-length list is the lower middle. */
@@ -76,6 +84,13 @@ export interface ClassifiedOrder {
   placedMs: number
   readyMs: number
   waitSeconds: number
+  /**
+   * Orders placed before this one and not yet handed over — the line this
+   * customer actually stood in. For a held group's members that EXCLUDES their
+   * own groupmates: they arrived together, so counting each other would read
+   * party size as congestion. The model is fit on served-alone orders, which
+   * have no groupmates by definition, so the line itself is unaffected.
+   */
   queueDepth: number
   tag: WaitTag
   stranded: boolean
@@ -94,14 +109,30 @@ export interface ClassificationResult {
 }
 
 /**
+ * Bookkeeping classifyOrders needs while it works and nobody needs afterwards:
+ * whose hands the drink left in (partitions completion clustering) and which
+ * held-group component it landed in (so groupmates can be kept out of each
+ * other's queue depth).
+ */
+interface WorkingOrder extends ClassifiedOrder {
+  claimedBy: string | null
+  groupId: number | null
+}
+
+/**
  * Tag every measurable order. The discriminator (spec, "How to detect groups"):
  * completions clustered + placements clustered = a held group (servedTogether);
  * completions clustered + placements spread = a catch-up sweep. Requiring BOTH
  * is what survives a rush, where placements are continuously close but
  * completions are never simultaneous unless deliberately held.
+ *
+ * "Clustered" is stricter than "each card has a close neighbour", which chains
+ * at rush cadence: completions cluster per barista, and placements cluster into
+ * components whose WHOLE span fits the window. Then depth, then one fit on the
+ * solo orders, then one pass of stranded flags. Order is load-bearing.
  */
 export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult {
-  const measurable: ClassifiedOrder[] = orders
+  const measurable: WorkingOrder[] = orders
     .filter((o) => o.status === 'ready' && o.ready_at !== null)
     .map((o) => {
       const placedMs = Date.parse(o.created_at)
@@ -118,48 +149,91 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
         tag: 'servedAlone' as WaitTag,
         stranded: false,
         groupSize: null,
+        claimedBy: o.claimed_by ?? null,
+        groupId: null,
       }
     })
     .sort((a, b) => a.readyMs - b.readyMs)
 
-  // Depth at placement: measurable orders only — same exclusion rule as
-  // queueDepthAt, and O(n²) is fine at ~150 orders per event.
-  for (const o of measurable) {
-    o.queueDepth = measurable.filter(
-      (other) => other !== o && other.placedMs <= o.placedMs && other.readyMs > o.placedMs
-    ).length
-  }
-
   // Completion clusters: consecutive completions under READY_CLUSTER_SECONDS
   // apart. 30s is below the physical hands-on floor for one drink, so
   // sequential builds can never land in one cluster.
-  const clusters: ClassifiedOrder[][] = []
-  let clusterStart = 0
-  for (let i = 1; i <= measurable.length; i++) {
-    const gapMs =
-      i < measurable.length ? measurable[i].readyMs - measurable[i - 1].readyMs : Infinity
-    if (gapMs >= READY_CLUSTER_SECONDS * 1000) {
-      clusters.push(measurable.slice(clusterStart, i))
-      clusterStart = i
+  //
+  // One stream per pair of hands. The 30s argument holds for ONE barista; with
+  // two working the bar, handovers interleave every ~25s and a shared stream
+  // would chain an entire rush into a single cluster. Orders therefore cluster
+  // only with orders the same barista handed over, and a null claimed_by is its
+  // own stream, so solo mode is exactly as it was. Accepted limitation: a group
+  // whose drinks were built by two baristas splits across streams and its
+  // holding cost is undercounted (never fabricated).
+  const streams = new Map<string, WorkingOrder[]>()
+  for (const o of measurable) {
+    // Prefixed so a barista literally named "null" can't collide with solo mode.
+    const key = o.claimedBy === null ? 'solo' : `by:${o.claimedBy}`
+    const stream = streams.get(key)
+    if (stream) stream.push(o)
+    else streams.set(key, [o])
+  }
+
+  const clusters: WorkingOrder[][] = []
+  for (const stream of Array.from(streams.values())) {
+    let clusterStart = 0
+    for (let i = 1; i <= stream.length; i++) {
+      const gapMs = i < stream.length ? stream[i].readyMs - stream[i - 1].readyMs : Infinity
+      if (gapMs >= READY_CLUSTER_SECONDS * 1000) {
+        clusters.push(stream.slice(clusterStart, i))
+        clusterStart = i
+      }
     }
   }
 
+  let nextGroupId = 0
   for (const cluster of clusters) {
     if (cluster.length < 2) continue
-    for (const member of cluster) {
-      // Per-order, not per-cluster: a mixed cluster (a group plus one stale
-      // card bumped in the same moment) splits correctly.
-      const hasPlacedNeighbor = cluster.some(
-        (other) =>
-          other !== member &&
-          Math.abs(other.placedMs - member.placedMs) <= PLACED_CLUSTER_SECONDS * 1000
-      )
-      member.tag = hasPlacedNeighbor ? 'servedTogether' : 'sweep'
+    // Split the cluster into connected components of "placed within
+    // PLACED_CLUSTER_SECONDS of each other" — on a timeline that is just the
+    // maximal runs of consecutive placements under the window. Then test each
+    // component's TOTAL span, because chaining alone is not a group: at rush
+    // cadence every card has a close neighbour, so 0/120/240/360s would link
+    // into one six-minute "party" that is really an end-of-rush cleanup. A real
+    // group's whole ordering span fits inside the window (owner, design gate).
+    const byPlaced = [...cluster].sort((a, b) => a.placedMs - b.placedMs)
+    const components: WorkingOrder[][] = [[byPlaced[0]]]
+    for (const member of byPlaced.slice(1)) {
+      const current = components[components.length - 1]
+      const previous = current[current.length - 1]
+      if (member.placedMs - previous.placedMs <= PLACED_CLUSTER_SECONDS * 1000) current.push(member)
+      else components.push([member])
     }
-    // Size is the held-group headcount, so a mixed cluster's sweep member
-    // neither carries a size nor inflates the group's.
-    const togetherMembers = cluster.filter((m) => m.tag === 'servedTogether')
-    for (const member of togetherMembers) member.groupSize = togetherMembers.length
+
+    for (const members of components) {
+      const span = members[members.length - 1].placedMs - members[0].placedMs
+      // Everything that isn't a qualifying group is a sweep: singletons bumped
+      // alongside a group (the stale forgotten card) and over-span components
+      // alike. Size is the held-group headcount, so neither inflates it.
+      const isHeldGroup = members.length >= 2 && span <= PLACED_CLUSTER_SECONDS * 1000
+      const groupId = isHeldGroup ? nextGroupId++ : null
+      for (const member of members) {
+        member.tag = isHeldGroup ? 'servedTogether' : 'sweep'
+        member.groupSize = isHeldGroup ? members.length : null
+        member.groupId = groupId
+      }
+    }
+  }
+
+  // Depth at placement: measurable orders only — same exclusion rule as
+  // queueDepthAt, and O(n²) is fine at ~150 orders per event. Runs after
+  // grouping because a groupmate is not "the line": five friends alone in an
+  // empty cafe would otherwise register depths 0..4 off each other, and
+  // groupCost's whole quiet/busy axis would read group size as congestion.
+  for (const o of measurable) {
+    o.queueDepth = measurable.filter(
+      (other) =>
+        other !== o &&
+        other.placedMs <= o.placedMs &&
+        other.readyMs > o.placedMs &&
+        !(o.groupId !== null && other.groupId === o.groupId)
+    ).length
   }
 
   // Stranded pass. The ordering is load-bearing and runs exactly once (spec):
@@ -191,7 +265,17 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
 }
 
 /**
- * Least squares of wait on queue depth over served-alone orders.
+ * Theil–Sen fit of wait on queue depth over served-alone orders: the slope is
+ * the median of every pairwise slope, the floor the median of the leftovers.
+ *
+ * Deliberately not least squares. The point of this line is to catch the cards
+ * that sit far above it, and least squares hands the worst offender the most
+ * influence: a single forgotten card at a depth nothing else reached rotates
+ * the line up through itself, ends up with a small residual, escapes the
+ * stranded flag, and takes the published per-drink cost with it. A median of
+ * slopes cannot be moved by one point that way. Exact-linear data gives the
+ * identical answer, and O(n²) pairs is nothing at ~150 orders an event.
+ *
  * Returns null rather than nonsense: needs MIN_MODEL_POINTS points, 3+
  * distinct depths, a positive slope, and a positive floor (spec, Build §2).
  */
@@ -200,18 +284,21 @@ export function fitFloorAndLine(
 ): QueueModel | null {
   if (points.length < MIN_MODEL_POINTS) return null
   if (new Set(points.map((p) => p.depth)).size < 3) return null
-  const n = points.length
-  const meanX = points.reduce((s, p) => s + p.depth, 0) / n
-  const meanY = points.reduce((s, p) => s + p.waitSeconds, 0) / n
-  let sxx = 0
-  let sxy = 0
-  for (const p of points) {
-    sxx += (p.depth - meanX) ** 2
-    sxy += (p.depth - meanX) * (p.waitSeconds - meanY)
+  const pairSlopes: number[] = []
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const depthGap = points[j].depth - points[i].depth
+      if (depthGap === 0) continue // same depth says nothing about the slope
+      pairSlopes.push((points[j].waitSeconds - points[i].waitSeconds) / depthGap)
+    }
   }
-  if (sxx === 0) return null
-  const slope = sxy / sxx
-  const intercept = meanY - slope * meanX
+  // Unreachable given 3+ distinct depths, but the fit must never divide by hope.
+  if (pairSlopes.length === 0) return null
+  const slope = percentile(pairSlopes, 50) as number
+  const intercept = percentile(
+    points.map((p) => p.waitSeconds - slope * p.depth),
+    50
+  ) as number
   if (slope <= 0 || intercept <= 0) return null
   return { floorSeconds: intercept, perDrinkSeconds: slope }
 }
@@ -311,15 +398,26 @@ export function groupCost(
   }
 }
 
-/** Median model residual per segment, over clean orders only. */
+/**
+ * Median model residual per segment, over clean SOLO orders only — held groups
+ * are excluded even though they are not suspect. A group's drinks sit on the
+ * pass by choice; that wait is deliberate holding cost, groupCost's subject,
+ * and charging it to whatever the group happened to order invents a slow drink
+ * (a Cortado trio held 15 minutes reads "+755s slower" with identical prep).
+ *
+ * Known and accepted: a depth-only model cannot separate drink speed from
+ * when-in-the-event effects, so a drink ordered mostly at the end of a rush
+ * carries some of that rush in its number. These are relative deltas against
+ * the day's own average, not build times (spec, stay-simple decision).
+ */
 function segmentComparisons(
-  clean: ClassifiedOrder[],
+  soloClean: ClassifiedOrder[],
   model: QueueModel | null,
   keyOf: (o: ClassifiedOrder) => string | null
 ): SegmentComparison[] {
   if (!model) return []
   const groups = new Map<string, number[]>()
-  for (const o of clean) {
+  for (const o of soloClean) {
     const key = keyOf(o)
     if (key === null) continue
     groups.set(key, [...(groups.get(key) ?? []), residualAgainst(model, o)])
@@ -346,6 +444,9 @@ export function summarize(orders: TimedOrderInput[]): TimingSummary | null {
   // Clean = not suspect. Suspects stay in every headline number; "clean" exists
   // only for the counterfactual caption and fair per-segment comparisons.
   const clean = classified.filter((o) => o.tag !== 'sweep' && !o.stranded)
+  // Comparisons narrow further: solo orders only, so a held group's deliberate
+  // holding cost lands on groupCost and never on the drink it was ordering.
+  const soloClean = classified.filter((o) => o.tag === 'servedAlone' && !o.stranded)
 
   return {
     measured: classified.length,
@@ -377,10 +478,11 @@ export function summarize(orders: TimedOrderInput[]): TimingSummary | null {
       // both, so the two counts above can be summed only at the cost of
       // double-counting it. Captions use this number.
       suspectCount: classified.length - clean.length,
-      // An all-suspect event leaves `clean` empty, which lands on null too —
-      // percentile([], 90) is null, so there is no counterfactual to show.
+      // Two ways to have nothing to say: no suspects at all (nothing to
+      // subtract), or too few survivors to make a p90 mean anything. A
+      // mostly-suspect day lands on the second, and the caption says so.
       counterfactualP90Seconds:
-        sweepCount + strandedCount > 0
+        sweepCount + strandedCount > 0 && clean.length >= MIN_COUNTERFACTUAL_ORDERS
           ? percentile(
               clean.map((o) => o.waitSeconds),
               90
@@ -389,7 +491,7 @@ export function summarize(orders: TimedOrderInput[]): TimingSummary | null {
     },
     model,
     groupCost: groupCost(classified, model),
-    perDrink: segmentComparisons(clean, model, (o) => o.item),
-    byTemperature: segmentComparisons(clean, model, (o) => o.temperature),
+    perDrink: segmentComparisons(soloClean, model, (o) => o.item),
+    byTemperature: segmentComparisons(soloClean, model, (o) => o.temperature),
   }
 }

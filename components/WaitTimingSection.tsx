@@ -49,9 +49,19 @@ export default function WaitTimingSection({ timing, dateLabel }: WaitTimingSecti
 /** One adaptive sentence, the entire data-quality surface (spec, Decision 6). */
 function confidenceCopy(timing: TimingStats): string {
   const suspectCount = timing.suspect.suspectCount // distinct: never sum sweep + stranded
-  if (suspectCount === 0) return `All ${timing.measured} orders look cleanly timed.`
   const counterfactual = timing.suspect.counterfactualP90Seconds
-  if (counterfactual !== null && timing.p90Seconds - counterfactual >= 60) {
+  if (suspectCount === 0) {
+    // No model means the stranded check never ran, so "all clean" would be
+    // claiming a search that did not happen. Say which half was actually done.
+    if (timing.model === null) {
+      return 'No batch bumps spotted. Too few solo-served orders to check for stranded cards.'
+    }
+    return `All ${timing.measured} orders look cleanly timed.`
+  }
+  if (counterfactual === null) {
+    return `${suspectCount} orders look marked-ready-late. Too few cleanly timed orders to say what the day would have looked like without them.`
+  }
+  if (timing.p90Seconds - counterfactual >= 60) {
     return `${suspectCount} orders look marked-ready-late. Without them: ${formatDuration(counterfactual)}.`
   }
   return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late. Too few to matter.`

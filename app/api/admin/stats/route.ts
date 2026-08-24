@@ -29,6 +29,9 @@ export async function GET(request: Request) {
     // dataset produces confidently wrong numbers (spec, Build §3).
     const ORDER_COLUMNS = 'id, item, modifiers, status, created_at, ready_at, claimed_by'
     const STATUSES = ['placed', 'in_progress', 'ready', 'canceled'] as const
+    const ROW_CAP = 1000
+    /** How many prior days to walk back looking for a real previous event. */
+    const PREVIOUS_EVENT_LOOKBACK_DAYS = 3
 
     const [targetRes, trendRes, ...countResults] = await Promise.all([
       supabase
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
         .gte('created_at', startIso)
         .lt('created_at', endIso)
         .order('created_at', { ascending: true })
-        .limit(1000),
+        .limit(ROW_CAP),
       // All-time trends when viewing today (existing quirk, deliberately kept —
       // backlog #9's business). Newest-first so an explicit cap keeps recent
       // events rather than the oldest.
@@ -60,6 +63,14 @@ export async function GET(request: Request) {
     if (targetRes.error) throw targetRes.error
     if (trendRes.error) throw trendRes.error
     const targetDateOrders = targetRes.data || []
+    if (targetDateOrders.length === ROW_CAP) {
+      // Not an error the owner can act on, but the timing math below would be
+      // computed on part of a day while looking like the whole of it.
+      console.warn(
+        'stats: day hit the 1000-row cap; timing may be computed on a truncated day',
+        targetDate
+      )
+    }
 
     const countByStatus = (orderList: { status: string }[]) => {
       return orderList.reduce(
@@ -134,15 +145,25 @@ export async function GET(request: Request) {
     if (summary) {
       // Previous event, for the headline delta: the most recent order before
       // this day names the date; that day's own summary provides the p90.
+      //
+      // The probe only looks at orders that could be timed, and walks back a
+      // few days rather than giving up on the first miss. One canceled test
+      // order the morning after an event would otherwise name an empty day the
+      // "previous event" and silently drop the delta from the headline.
       let previousEvent = null
-      const probe = await supabase
-        .from('orders')
-        .select('created_at')
-        .lt('created_at', startIso)
-        .order('created_at', { ascending: false })
-        .limit(1)
-      const probeRow = probe.data?.[0]
-      if (!probe.error && probeRow) {
+      let searchBeforeIso = startIso
+      for (let day = 0; day < PREVIOUS_EVENT_LOOKBACK_DAYS && !previousEvent; day++) {
+        const probe = await supabase
+          .from('orders')
+          .select('created_at')
+          .eq('status', 'ready')
+          .not('ready_at', 'is', null)
+          .lt('created_at', searchBeforeIso)
+          .order('created_at', { ascending: false })
+          .limit(1)
+        const probeRow = probe.data?.[0]
+        if (probe.error || !probeRow) break
+
         const prevDate = dateFmt.format(new Date(probeRow.created_at))
         const prevRange = utcRangeForLocalDay(prevDate, timezone)
         const prevRes = await supabase
@@ -150,13 +171,21 @@ export async function GET(request: Request) {
           .select(ORDER_COLUMNS)
           .gte('created_at', prevRange.startIso)
           .lt('created_at', prevRange.endIso)
-          .limit(1000)
-        const prevSummary = prevRes.error
-          ? null
-          : summarize((prevRes.data || []) as TimedOrderInput[])
-        if (prevSummary) {
-          previousEvent = { date: prevDate, p90Seconds: prevSummary.p90Seconds }
+          .order('created_at', { ascending: true })
+          .limit(ROW_CAP)
+        if (prevRes.error) break
+        const prevRows = prevRes.data || []
+        if (prevRows.length === ROW_CAP) {
+          console.warn(
+            'stats: day hit the 1000-row cap; timing may be computed on a truncated day',
+            prevDate
+          )
         }
+
+        const prevSummary = summarize(prevRows as TimedOrderInput[])
+        if (prevSummary) previousEvent = { date: prevDate, p90Seconds: prevSummary.p90Seconds }
+        // Too small to summarize: keep walking back from the start of that day.
+        else searchBeforeIso = prevRange.startIso
       }
       timing = { ...summary, previousEvent }
     }
