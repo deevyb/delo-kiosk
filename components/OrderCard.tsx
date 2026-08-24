@@ -49,14 +49,19 @@ export default function OrderCard({
   onMarkInProgress,
   onBackToQueue,
 }: OrderCardProps) {
-  // Ready + today: show elapsed prep time (placed → ready). Others: relative time or date.
-  const isReadyToday = order.status === 'ready' && isToday(order.updated_at)
+  // Ready + today: show the true wait (placed → ready_at). ready_at is trigger-owned,
+  // so a drink re-queued and re-readied measures the remake — updated_at could not
+  // promise that (it moves on every transition). Null fallback covers any row that
+  // predates the timing migration.
+  const readyAt = order.status === 'ready' ? (order.ready_at ?? order.updated_at) : null
+  const isReadyToday = readyAt !== null && isToday(readyAt)
   const relevantTimestamp = order.status === 'canceled' ? order.updated_at : order.created_at
-  const timeBadge = isReadyToday
-    ? formatPrepTime(order.created_at, order.updated_at)
-    : isToday(relevantTimestamp)
-      ? getRelativeTime(relevantTimestamp, now)
-      : formatShortDate(relevantTimestamp)
+  const timeBadge =
+    isReadyToday && readyAt
+      ? formatPrepTime(order.created_at, readyAt)
+      : isToday(relevantTimestamp)
+        ? getRelativeTime(relevantTimestamp, now)
+        : formatShortDate(relevantTimestamp)
 
   // Barista highlight: thick left border + tinted background for current barista's orders
   const isMyOrder =
