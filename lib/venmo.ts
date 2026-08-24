@@ -5,7 +5,7 @@ export interface VenmoConfig {
 
 /**
  * Payment config lives in env only — no prices in the menu system.
- * Both vars must be set (and the price numeric) or the feature is off
+ * Both vars must be set (and the price a positive, finite number) or the feature is off
  * everywhere (?pay=1 safely does nothing, entry points hide).
  *
  * NEXT_PUBLIC_ vars are inlined into the client bundle at build time,
@@ -13,10 +13,11 @@ export interface VenmoConfig {
  * never process.env[name] or destructuring.
  */
 export function getVenmoConfig(): VenmoConfig | null {
-  const handle = process.env.NEXT_PUBLIC_VENMO_HANDLE
+  const handle = process.env.NEXT_PUBLIC_VENMO_HANDLE?.trim()
   const price = process.env.NEXT_PUBLIC_VENMO_PRICE
-  if (!handle || !price || isNaN(Number(price))) return null
-  return { handle: handle.replace(/^@/, ''), price: Number(price).toFixed(2) }
+  const amount = Number(price)
+  if (!handle || !price || !Number.isFinite(amount) || amount <= 0) return null
+  return { handle: handle.replace(/^@/, ''), price: amount.toFixed(2) }
 }
 
 /**

@@ -266,10 +266,10 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
       <AnimatePresence>
         {screen === 'confirmed' && submittedOrder && (
           <motion.div
-            className="fixed inset-0 bg-delo-cream flex items-center justify-center z-50"
+            className="fixed inset-0 bg-delo-cream flex items-center justify-center z-50 pointer-events-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, pointerEvents: 'none' }}
           >
             {isPayMode ? (
               <TapToPay order={submittedOrder} onDismiss={resetOrder} />

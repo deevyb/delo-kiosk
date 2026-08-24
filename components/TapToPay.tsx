@@ -53,7 +53,7 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
       {/* Order info — readable at arm's length */}
       <motion.div
         className="flex-1 flex flex-col items-center justify-center"
-        {...enter(0, reduceMotion)}
+        {...enter(0.25, reduceMotion)}
       >
         {/* Checkmark icon — same mark as the plain confirmation */}
         <div className="w-16 h-16 rounded-full bg-delo-maroon/10 flex items-center justify-center mx-auto mb-4">
@@ -81,7 +81,7 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
       </motion.div>
 
       {/* QR fallback — secondary, above the tap zone */}
-      <motion.div className="flex flex-col items-center" {...enter(0.1, reduceMotion)}>
+      <motion.div className="flex flex-col items-center" {...enter(0.35, reduceMotion)}>
         <div className="bg-white rounded-2xl p-3 shadow-[0_1px_2px_rgba(0,0,36,0.06),0_4px_12px_rgba(0,0,36,0.08)]">
           <QRCode
             value={qrUrl}
@@ -96,7 +96,7 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
       </motion.div>
 
       {/* Tap hero — bottom, where the sticker physically lives */}
-      <motion.div className="flex flex-col items-center mt-6" {...enter(0.2, reduceMotion)}>
+      <motion.div className="flex flex-col items-center mt-6" {...enter(0.45, reduceMotion)}>
         <p className="font-bricolage font-semibold text-xl md:text-2xl text-delo-navy">
           Tap your phone under here
         </p>
