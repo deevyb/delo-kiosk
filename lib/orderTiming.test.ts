@@ -217,6 +217,7 @@ function classified(overrides: Partial<ClassifiedOrder>): ClassifiedOrder {
     queueDepth: 0,
     tag: 'servedAlone',
     stranded: false,
+    groupSize: null,
     ...overrides,
   }
 }
@@ -225,17 +226,24 @@ describe('groupCost', () => {
   const model = { floorSeconds: 120, perDrinkSeconds: 60 }
   it('splits the holding cost by congestion at placement', () => {
     const orders = [
-      // Six alones spread across depths so the event's median depth is 3
+      // Six alones spread across depths. Nearest-rank puts the event's median
+      // depth at 2 (all ten orders: 0,1,1,1,2,4,5,5,5,6) — the quiet/busy split
+      // below lands the same way whether the cut is 2 or 3.
       ...[0, 1, 2, 4, 5, 6].map((d) => classified({ queueDepth: d, waitSeconds: 120 + 60 * d })),
       // Held pair when quiet (depth 1, predicted 180): cost 120 each
-      classified({ tag: 'servedTogether', queueDepth: 1, waitSeconds: 300 }),
-      classified({ tag: 'servedTogether', queueDepth: 1, waitSeconds: 300 }),
+      classified({ tag: 'servedTogether', groupSize: 2, queueDepth: 1, waitSeconds: 300 }),
+      classified({ tag: 'servedTogether', groupSize: 2, queueDepth: 1, waitSeconds: 300 }),
       // Held pair when slammed (depth 5, predicted 420): cost 280 each
-      classified({ tag: 'servedTogether', queueDepth: 5, waitSeconds: 700 }),
-      classified({ tag: 'servedTogether', queueDepth: 5, waitSeconds: 700 }),
+      classified({ tag: 'servedTogether', groupSize: 2, queueDepth: 5, waitSeconds: 700 }),
+      classified({ tag: 'servedTogether', groupSize: 2, queueDepth: 5, waitSeconds: 700 }),
     ]
     const cost = groupCost(orders, model)
-    expect(cost).toEqual({ quietMedianSeconds: 120, busyMedianSeconds: 280 })
+    expect(cost).toEqual({
+      overallMedianSeconds: 120,
+      quietMedianSeconds: 120,
+      busyMedianSeconds: 280,
+      bySize: [{ size: 2, count: 4, medianSeconds: 120 }],
+    })
   })
   it('is null without a model or without held orders', () => {
     expect(groupCost([classified({})], model)).toBeNull()
@@ -292,5 +300,61 @@ describe('summarize', () => {
     expect(cortado!.count).toBe(3)
     expect(cortado!.deltaSeconds).toBeGreaterThan(30)
     expect(summary.perDrink.find((d) => d.name === 'Chai')).toBeUndefined() // below MIN_SEGMENT_ORDERS
+  })
+})
+
+/** A held group: placements 30s apart (chained ≤180s), completions 5s apart. */
+function heldGroup(baseSeconds: number, size: number, readySeconds: number): TimedOrderInput[] {
+  return Array.from({ length: size }, (_, i) => order(baseSeconds + i * 30, readySeconds + i * 5))
+}
+
+describe('group sizes', () => {
+  it('records the servedTogether member count as groupSize; sweeps stay null', () => {
+    const { orders } = classifyOrders([
+      order(0, 1505), // stale card in the same completion cluster
+      order(1150, 1500),
+      order(1190, 1510),
+    ])
+    const byPlaced = [...orders].sort((a, b) => a.placedMs - b.placedMs)
+    expect(byPlaced[0].groupSize).toBeNull() // sweep
+    expect(byPlaced[1].groupSize).toBe(2)
+    expect(byPlaced[2].groupSize).toBe(2)
+  })
+
+  it('buckets group cost by size with the minimum-count guard', () => {
+    const fixture = [
+      ...cleanTriplets(6),
+      ...heldGroup(6000, 2, 6600),
+      ...heldGroup(7000, 2, 7600), // two pairs: 4 orders in the size-2 bucket
+      ...heldGroup(8000, 3, 8600), // 3 orders in the size-3 bucket
+      ...heldGroup(9000, 5, 9700), // 5 orders in the 4+ bucket
+    ]
+    const summary = summarize(fixture)!
+    expect(summary.groupCost).not.toBeNull()
+    expect(summary.groupCost!.bySize.map((b) => [b.size, b.count])).toEqual([
+      [2, 4],
+      [3, 3],
+      [4, 5],
+    ])
+    expect(summary.groupCost!.overallMedianSeconds).toBeGreaterThan(0)
+  })
+
+  it('falls back to the combined number when every size bucket is thin', () => {
+    const summary = summarize([...cleanTriplets(6), ...heldGroup(6000, 2, 6600)])!
+    expect(summary.groupCost).not.toBeNull()
+    expect(summary.groupCost!.bySize).toEqual([]) // 2 orders < MIN_SEGMENT_ORDERS
+    expect(typeof summary.groupCost!.overallMedianSeconds).toBe('number')
+  })
+})
+
+describe('distinct suspect count', () => {
+  it('an order that is both sweep and stranded counts once', () => {
+    // Two orders complete together; placements 1800s apart -> both sweep.
+    // The first also waited 2000s at depth 0 -> stranded too.
+    const fixture = [...cleanTriplets(6), order(5000, 7000), order(6800, 7005)]
+    const summary = summarize(fixture)!
+    expect(summary.suspect.sweepCount).toBe(2)
+    expect(summary.suspect.strandedCount).toBe(1)
+    expect(summary.suspect.suspectCount).toBe(2) // NOT 3
   })
 })

@@ -79,6 +79,8 @@ export interface ClassifiedOrder {
   queueDepth: number
   tag: WaitTag
   stranded: boolean
+  /** servedTogether members: how many were handed over together; null otherwise. */
+  groupSize: number | null
 }
 
 export interface QueueModel {
@@ -115,6 +117,7 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
         queueDepth: 0,
         tag: 'servedAlone' as WaitTag,
         stranded: false,
+        groupSize: null,
       }
     })
     .sort((a, b) => a.readyMs - b.readyMs)
@@ -153,6 +156,10 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
       )
       member.tag = hasPlacedNeighbor ? 'servedTogether' : 'sweep'
     }
+    // Size is the held-group headcount, so a mixed cluster's sweep member
+    // neither carries a size nor inflates the group's.
+    const togetherMembers = cluster.filter((m) => m.tag === 'servedTogether')
+    for (const member of togetherMembers) member.groupSize = togetherMembers.length
   }
 
   // Stranded pass. The ordering is load-bearing and runs exactly once (spec):
@@ -164,11 +171,9 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
     alone.map((o) => ({ depth: o.queueDepth, waitSeconds: o.waitSeconds }))
   )
   if (model) {
-    const residualOf = (o: ClassifiedOrder) =>
-      o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
     const medianAbsResidual =
       percentile(
-        alone.map((o) => Math.abs(residualOf(o))),
+        alone.map((o) => Math.abs(residualAgainst(model, o))),
         50
       ) ?? 0
     const threshold = Math.max(
@@ -178,7 +183,7 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
     for (const o of measurable) {
       // Held groups are real waits by definition — long is only suspicious
       // when nothing explains it.
-      if (o.tag !== 'servedTogether' && residualOf(o) > threshold) o.stranded = true
+      if (o.tag !== 'servedTogether' && residualAgainst(model, o) > threshold) o.stranded = true
     }
   }
 
@@ -211,9 +216,25 @@ export function fitFloorAndLine(
   return { floorSeconds: intercept, perDrinkSeconds: slope }
 }
 
+/** Seconds beyond what the queue model predicts for this order's depth. Positive = slower. */
+function residualAgainst(model: QueueModel, o: ClassifiedOrder): number {
+  return o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
+}
+
+export interface GroupSizeCost {
+  /** 4 means "4 or more" — bigger groups are rare enough to pool. */
+  size: 2 | 3 | 4
+  count: number
+  medianSeconds: number
+}
+
 export interface GroupCost {
+  /** Median holding cost across every held order, whatever the group size. */
+  overallMedianSeconds: number
   quietMedianSeconds: number | null
   busyMedianSeconds: number | null
+  /** Only buckets with MIN_SEGMENT_ORDERS members, size ascending. May be empty. */
+  bySize: GroupSizeCost[]
 }
 
 export interface SegmentComparison {
@@ -233,6 +254,8 @@ export interface TimingSummary {
   suspect: {
     sweepCount: number
     strandedCount: number
+    /** Distinct orders that are sweep, stranded, or both — never the sum of the two. */
+    suspectCount: number
     counterfactualP90Seconds: number | null
   }
   model: QueueModel | null
@@ -258,9 +281,24 @@ export function groupCost(
       classified.map((o) => o.queueDepth),
       50
     ) ?? 0
-  const costOf = (o: ClassifiedOrder) =>
-    o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
+  const costOf = (o: ClassifiedOrder) => residualAgainst(model, o)
+  const costs = together.map(costOf)
+  // Thin buckets are dropped rather than shown: with one or two groups a size
+  // bucket is an anecdote. When they all drop out, the overall number carries it.
+  const bySize: GroupSizeCost[] = ([2, 3, 4] as const)
+    .map((size) => {
+      const members = together.filter((o) =>
+        size === 4 ? (o.groupSize ?? 0) >= 4 : o.groupSize === size
+      )
+      return {
+        size,
+        count: members.length,
+        medianSeconds: percentile(members.map(costOf), 50) ?? 0,
+      }
+    })
+    .filter((bucket) => bucket.count >= MIN_SEGMENT_ORDERS)
   return {
+    overallMedianSeconds: percentile(costs, 50) as number,
     quietMedianSeconds: percentile(
       together.filter((o) => o.queueDepth < medianDepth).map(costOf),
       50
@@ -269,6 +307,7 @@ export function groupCost(
       together.filter((o) => o.queueDepth >= medianDepth).map(costOf),
       50
     ),
+    bySize,
   }
 }
 
@@ -283,8 +322,7 @@ function segmentComparisons(
   for (const o of clean) {
     const key = keyOf(o)
     if (key === null) continue
-    const residual = o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
-    groups.set(key, [...(groups.get(key) ?? []), residual])
+    groups.set(key, [...(groups.get(key) ?? []), residualAgainst(model, o)])
   }
   return Array.from(groups.entries())
     .filter(([, residuals]) => residuals.length >= MIN_SEGMENT_ORDERS)
@@ -335,6 +373,12 @@ export function summarize(orders: TimedOrderInput[]): TimingSummary | null {
     suspect: {
       sweepCount,
       strandedCount,
+      // Distinct by construction: `clean` already excludes an order that is
+      // both, so the two counts above can be summed only at the cost of
+      // double-counting it. Captions use this number.
+      suspectCount: classified.length - clean.length,
+      // An all-suspect event leaves `clean` empty, which lands on null too —
+      // percentile([], 90) is null, so there is no counterfactual to show.
       counterfactualP90Seconds:
         sweepCount + strandedCount > 0
           ? percentile(
