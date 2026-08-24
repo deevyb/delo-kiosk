@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getVenmoConfig } from '@/lib/venmo'
 
 export default function Home() {
   return (
@@ -8,13 +9,21 @@ export default function Home() {
         Where Every Cup Brings People Together
       </p>
 
-      <div className="flex gap-6">
+      <div className="flex flex-wrap justify-center gap-6">
         <Link
           href="/order"
           className="px-8 py-4 bg-delo-maroon text-delo-cream font-bricolage font-semibold text-xl rounded-xl hover:bg-delo-maroon/90 transition-colors"
         >
           Start Ordering
         </Link>
+        {getVenmoConfig() && (
+          <Link
+            href="/order?pay=1"
+            className="px-8 py-4 border-2 border-delo-maroon text-delo-maroon font-bricolage font-semibold text-xl rounded-xl hover:bg-delo-maroon/10 transition-colors"
+          >
+            Tap to Pay
+          </Link>
+        )}
         <Link
           href="/kitchen"
           className="px-8 py-4 border-2 border-delo-maroon text-delo-maroon font-bricolage font-semibold text-xl rounded-xl hover:bg-delo-maroon/10 transition-colors"

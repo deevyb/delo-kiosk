@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { getVenmoConfig } from '@/lib/venmo'
 
 interface NavMenuProps {
   /** Optional logout handler - when provided, shows logout option in menu */
@@ -12,6 +13,8 @@ interface NavMenuProps {
 
 const navItems = [
   { href: '/', label: 'Home' },
+  { href: '/order', label: 'Order' },
+  ...(getVenmoConfig() ? [{ href: '/order?pay=1', label: 'Order · Tap to Pay' }] : []),
   { href: '/kitchen', label: 'Kitchen' },
   { href: '/admin', label: 'Admin' },
 ]
