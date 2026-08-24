@@ -56,3 +56,4 @@ next-env.d.ts
 # The rest of .claude/ (commands, rules, launch.json) is intentionally shared.
 .claude/settings.local.json
 .claude/*.local.json
+.claude/worktrees/
