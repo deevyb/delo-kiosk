@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { MenuItem, Modifier, Order } from '@/lib/supabase'
+import { getVenmoConfig } from '@/lib/venmo'
 import DrinkCard from './DrinkCard'
 import DrinkCustomizer from './DrinkCustomizer'
+import TapToPay from './TapToPay'
 
 interface OrderClientProps {
   menuItems: MenuItem[]
@@ -13,6 +16,9 @@ interface OrderClientProps {
 }
 
 type Screen = 'menu' | 'customize' | 'confirmed'
+
+const CONFIRMATION_RESET_MS = 3000
+const PAYMENT_RESET_MS = 60_000
 
 /**
  * OrderClient - Main controller for the ordering flow
@@ -42,25 +48,30 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
   const [submittedOrder, setSubmittedOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Payment screen needs both the per-event opt-in (?pay=1) and env config
+  const searchParams = useSearchParams()
+  const isPayMode = searchParams.get('pay') === '1' && getVenmoConfig() !== null
+
+  /** Reset all state for the next customer */
+  const resetOrder = useCallback(() => {
+    setScreen('menu')
+    setSelectedDrink(null)
+    setSelectedModifiers({})
+    setCustomerName('')
+    setSubmittedOrder(null)
+  }, [])
+
   /**
-   * Auto-reset after confirmation screen
-   * Returns to menu after 3 seconds so the next customer can order
+   * Auto-reset after the confirmation screen.
+   * Plain kiosk: 3s and back to the menu. Pay mode: the order-taker
+   * dismisses explicitly ("New order"), with a 60s safety net so a
+   * forgotten screen can't strand the flow mid-rush.
    */
   useEffect(() => {
     if (screen !== 'confirmed') return
-
-    const timer = setTimeout(() => {
-      // Reset all state for next customer
-      setScreen('menu')
-      setSelectedDrink(null)
-      setSelectedModifiers({})
-      setCustomerName('')
-      setSubmittedOrder(null)
-    }, 3000)
-
-    // Cleanup on unmount or if screen changes
+    const timer = setTimeout(resetOrder, isPayMode ? PAYMENT_RESET_MS : CONFIRMATION_RESET_MS)
     return () => clearTimeout(timer)
-  }, [screen])
+  }, [screen, isPayMode, resetOrder])
 
   /**
    * Helper to get the first available option in a category, or undefined if none available
@@ -260,44 +271,48 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            >
-              {/* Checkmark icon */}
-              <div className="w-16 h-16 rounded-full bg-delo-maroon/10 flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-delo-maroon"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+            {isPayMode ? (
+              <TapToPay order={submittedOrder} onDismiss={resetOrder} />
+            ) : (
+              <motion.div
+                className="text-center"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              >
+                {/* Checkmark icon */}
+                <div className="w-16 h-16 rounded-full bg-delo-maroon/10 flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-delo-maroon"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
 
-              <p className="text-description text-delo-navy/60 mb-6">On it!</p>
+                <p className="text-description text-delo-navy/60 mb-6">On it!</p>
 
-              <h1 className="font-bricolage font-bold text-2xl md:text-4xl text-delo-navy mb-4">
-                {submittedOrder.customer_name}
-              </h1>
+                <h1 className="font-bricolage font-bold text-2xl md:text-4xl text-delo-navy mb-4">
+                  {submittedOrder.customer_name}
+                </h1>
 
-              <p className="font-bricolage font-semibold text-lg md:text-2xl text-delo-navy">
-                {submittedOrder.item}
-              </p>
-
-              {/* Modifiers line - only show if there are modifiers */}
-              {(submittedOrder.modifiers?.milk || submittedOrder.modifiers?.temperature) && (
-                <p className="text-modifier-option text-delo-navy/80 mt-2">
-                  {[submittedOrder.modifiers?.milk, submittedOrder.modifiers?.temperature]
-                    .filter(Boolean)
-                    .join(', ')}
+                <p className="font-bricolage font-semibold text-lg md:text-2xl text-delo-navy">
+                  {submittedOrder.item}
                 </p>
-              )}
-            </motion.div>
+
+                {/* Modifiers line - only show if there are modifiers */}
+                {(submittedOrder.modifiers?.milk || submittedOrder.modifiers?.temperature) && (
+                  <p className="text-modifier-option text-delo-navy/80 mt-2">
+                    {[submittedOrder.modifiers?.milk, submittedOrder.modifiers?.temperature]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </p>
+                )}
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
