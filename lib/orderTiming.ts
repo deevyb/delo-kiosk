@@ -210,3 +210,142 @@ export function fitFloorAndLine(
   if (slope <= 0 || intercept <= 0) return null
   return { floorSeconds: intercept, perDrinkSeconds: slope }
 }
+
+export interface GroupCost {
+  quietMedianSeconds: number | null
+  busyMedianSeconds: number | null
+}
+
+export interface SegmentComparison {
+  name: string
+  count: number
+  /** Median residual vs the model at matched queue depth. Positive = slower. */
+  deltaSeconds: number
+}
+
+export interface TimingSummary {
+  measured: number
+  p90Seconds: number
+  medianSeconds: number
+  buckets: { fast: number; medium: number; slow: number }
+  servedAlone: { count: number; p90Seconds: number | null }
+  servedTogether: { count: number; p90Seconds: number | null }
+  suspect: {
+    sweepCount: number
+    strandedCount: number
+    counterfactualP90Seconds: number | null
+  }
+  model: QueueModel | null
+  groupCost: GroupCost | null
+  perDrink: SegmentComparison[]
+  byTemperature: SegmentComparison[]
+}
+
+/**
+ * What holding for a group costs, split by congestion at placement — the
+ * direct test of the ED study's boundary condition ("benefits concentrate
+ * under manageable congestion") against this kiosk's own events.
+ */
+export function groupCost(
+  classified: ClassifiedOrder[],
+  model: QueueModel | null
+): GroupCost | null {
+  if (!model) return null
+  const together = classified.filter((o) => o.tag === 'servedTogether')
+  if (together.length === 0) return null
+  const medianDepth =
+    percentile(
+      classified.map((o) => o.queueDepth),
+      50
+    ) ?? 0
+  const costOf = (o: ClassifiedOrder) =>
+    o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
+  return {
+    quietMedianSeconds: percentile(
+      together.filter((o) => o.queueDepth < medianDepth).map(costOf),
+      50
+    ),
+    busyMedianSeconds: percentile(
+      together.filter((o) => o.queueDepth >= medianDepth).map(costOf),
+      50
+    ),
+  }
+}
+
+/** Median model residual per segment, over clean orders only. */
+function segmentComparisons(
+  clean: ClassifiedOrder[],
+  model: QueueModel | null,
+  keyOf: (o: ClassifiedOrder) => string | null
+): SegmentComparison[] {
+  if (!model) return []
+  const groups = new Map<string, number[]>()
+  for (const o of clean) {
+    const key = keyOf(o)
+    if (key === null) continue
+    const residual = o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
+    groups.set(key, [...(groups.get(key) ?? []), residual])
+  }
+  return Array.from(groups.entries())
+    .filter(([, residuals]) => residuals.length >= MIN_SEGMENT_ORDERS)
+    .map(([name, residuals]) => ({
+      name,
+      count: residuals.length,
+      deltaSeconds: percentile(residuals, 50) as number,
+    }))
+    .sort((a, b) => b.deltaSeconds - a.deltaSeconds)
+}
+
+export function summarize(orders: TimedOrderInput[]): TimingSummary | null {
+  const { orders: classified, model } = classifyOrders(orders)
+  if (classified.length < MIN_TIMED_ORDERS) return null
+
+  const waits = classified.map((o) => o.waitSeconds)
+  const alone = classified.filter((o) => o.tag === 'servedAlone')
+  const together = classified.filter((o) => o.tag === 'servedTogether')
+  const sweepCount = classified.filter((o) => o.tag === 'sweep').length
+  const strandedCount = classified.filter((o) => o.stranded).length
+  // Clean = not suspect. Suspects stay in every headline number; "clean" exists
+  // only for the counterfactual caption and fair per-segment comparisons.
+  const clean = classified.filter((o) => o.tag !== 'sweep' && !o.stranded)
+
+  return {
+    measured: classified.length,
+    p90Seconds: percentile(waits, 90) as number,
+    medianSeconds: percentile(waits, 50) as number,
+    buckets: {
+      fast: waits.filter((w) => w < BUCKET_FAST_SECONDS).length,
+      medium: waits.filter((w) => w >= BUCKET_FAST_SECONDS && w < BUCKET_SLOW_SECONDS).length,
+      slow: waits.filter((w) => w >= BUCKET_SLOW_SECONDS).length,
+    },
+    servedAlone: {
+      count: alone.length,
+      p90Seconds: percentile(
+        alone.map((o) => o.waitSeconds),
+        90
+      ),
+    },
+    servedTogether: {
+      count: together.length,
+      p90Seconds: percentile(
+        together.map((o) => o.waitSeconds),
+        90
+      ),
+    },
+    suspect: {
+      sweepCount,
+      strandedCount,
+      counterfactualP90Seconds:
+        sweepCount + strandedCount > 0
+          ? percentile(
+              clean.map((o) => o.waitSeconds),
+              90
+            )
+          : null,
+    },
+    model,
+    groupCost: groupCost(classified, model),
+    perDrink: segmentComparisons(clean, model, (o) => o.item),
+    byTemperature: segmentComparisons(clean, model, (o) => o.temperature),
+  }
+}

@@ -6,6 +6,9 @@ import {
   fitFloorAndLine,
   MIN_MODEL_POINTS,
   TimedOrderInput,
+  groupCost,
+  summarize,
+  ClassifiedOrder,
 } from './orderTiming'
 
 /** All fixtures hang off one instant so tests never touch the real clock. */
@@ -200,5 +203,94 @@ describe('stranded cards', () => {
     const { orders, model } = classifyOrders([order(0, 1200), order(2000, 3200)])
     expect(model).toBeNull()
     expect(orders.every((o) => !o.stranded)).toBe(true)
+  })
+})
+
+function classified(overrides: Partial<ClassifiedOrder>): ClassifiedOrder {
+  return {
+    id: `c${nextId++}`,
+    item: 'Latte',
+    temperature: 'Hot',
+    placedMs: T0,
+    readyMs: T0 + 120_000,
+    waitSeconds: 120,
+    queueDepth: 0,
+    tag: 'servedAlone',
+    stranded: false,
+    ...overrides,
+  }
+}
+
+describe('groupCost', () => {
+  const model = { floorSeconds: 120, perDrinkSeconds: 60 }
+  it('splits the holding cost by congestion at placement', () => {
+    const orders = [
+      // Six alones spread across depths so the event's median depth is 3
+      ...[0, 1, 2, 4, 5, 6].map((d) => classified({ queueDepth: d, waitSeconds: 120 + 60 * d })),
+      // Held pair when quiet (depth 1, predicted 180): cost 120 each
+      classified({ tag: 'servedTogether', queueDepth: 1, waitSeconds: 300 }),
+      classified({ tag: 'servedTogether', queueDepth: 1, waitSeconds: 300 }),
+      // Held pair when slammed (depth 5, predicted 420): cost 280 each
+      classified({ tag: 'servedTogether', queueDepth: 5, waitSeconds: 700 }),
+      classified({ tag: 'servedTogether', queueDepth: 5, waitSeconds: 700 }),
+    ]
+    const cost = groupCost(orders, model)
+    expect(cost).toEqual({ quietMedianSeconds: 120, busyMedianSeconds: 280 })
+  })
+  it('is null without a model or without held orders', () => {
+    expect(groupCost([classified({})], model)).toBeNull()
+    expect(groupCost([classified({ tag: 'servedTogether' })], null)).toBeNull()
+  })
+})
+
+describe('summarize', () => {
+  it('returns null below the minimum, whatever the reason', () => {
+    expect(summarize([])).toBeNull()
+    expect(summarize([order(0, 120)])).toBeNull()
+    expect(
+      summarize(Array.from({ length: 12 }, () => order(0, null, { status: 'canceled' })))
+    ).toBeNull()
+    expect(summarize(Array.from({ length: 12 }, () => order(0, null)))).toBeNull()
+  })
+
+  it('sweeps stay in the headline but drive the counterfactual', () => {
+    // 12 clean fast orders + a 3-order sweep that waited ~20 minutes.
+    const clean = Array.from({ length: 12 }, (_, i) => order(i * 200, i * 200 + 150))
+    const sweep = [order(3000, 4210), order(2000, 4215), order(1000, 4220)]
+    const summary = summarize([...clean, ...sweep])!
+    expect(summary.measured).toBe(15)
+    expect(summary.suspect.sweepCount).toBe(3)
+    expect(summary.p90Seconds).toBeGreaterThan(1000) // sweeps pull the headline up — included
+    expect(summary.suspect.counterfactualP90Seconds).toBe(150) // and honesty shows the difference
+    expect(summary.buckets.fast).toBe(12)
+    expect(summary.buckets.slow).toBe(3)
+  })
+
+  it('an event of one giant held group still reports, with no model', () => {
+    const group = Array.from({ length: 12 }, (_, i) => order(i * 10, 500 + i))
+    const summary = summarize(group)!
+    expect(summary.servedTogether.count).toBe(12)
+    expect(summary.model).toBeNull()
+    expect(summary.groupCost).toBeNull()
+    expect(summary.suspect.counterfactualP90Seconds).toBeNull()
+    expect(summary.perDrink).toEqual([])
+  })
+
+  it('per-drink comparison uses clean orders only and respects the minimum count', () => {
+    // Cortados run 60s over the line; one stray drink appears only twice.
+    const fixture = [
+      ...cleanTriplets(6),
+      order(6000, 6180, { item: 'Cortado' }),
+      order(6600, 6780, { item: 'Cortado' }),
+      order(7200, 7380, { item: 'Cortado' }),
+      order(7800, 7860, { item: 'Chai' }),
+      order(8400, 8460, { item: 'Chai' }),
+    ]
+    const summary = summarize(fixture)!
+    const cortado = summary.perDrink.find((d) => d.name === 'Cortado')
+    expect(cortado).toBeDefined()
+    expect(cortado!.count).toBe(3)
+    expect(cortado!.deltaSeconds).toBeGreaterThan(30)
+    expect(summary.perDrink.find((d) => d.name === 'Chai')).toBeUndefined() // below MIN_SEGMENT_ORDERS
   })
 })
