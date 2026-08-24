@@ -360,9 +360,16 @@ production bundle. Fixtures are synthetic events built from plain timestamps:
 
 Live ETA on the confirmation screen (backlog #7 — this spec makes it small, but it touches
 the customer-facing order flow and should wait until wait-time data has been validated at a
-real event); per-barista breakdowns; any change to kitchen behaviour; group-size breakdowns
-(thin samples at 150 orders/event); the RLS fix (backlog #1) and the today-shows-all-time
-trends quirk (backlog #9), both deliberately left where they are.
+real event); per-barista breakdowns; any change to kitchen behaviour; the RLS fix
+(backlog #1) and the today-shows-all-time trends quirk (backlog #9), both deliberately left
+where they are.
+
+> Amendment (Aug 23, mockup gate): group-size cost buckets (2 / 3 / 4+) were originally out
+> of scope for thin-sample reasons; the owner reopened this at the design gate and approved
+> them WITH a minimum-count guard (a size row renders only with MIN_SEGMENT_ORDERS+ orders
+> behind it; a combined "Held for a group" row is the fallback). The slow-vs-rush split
+> stays computed but is not displayed — the owner's espresso-only menu removes most of the
+> mechanisms that would separate the two numbers.
 
 ## Known limitation to state plainly
 

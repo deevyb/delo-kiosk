@@ -17,9 +17,11 @@
 - **Nothing is ever excluded from the headline numbers.** Suspect orders are counted and captioned, never dropped.
 - **Segment labels are "served together" / "served alone"** — never "group"/"solo" in code or UI copy (spec: describes what the data shows, not a social assumption).
 - **No shame framing** in any copy. The confidence sentence is a data-quality readout, not a scolding.
+- **No em dashes anywhere in UI copy** (owner directive, Aug 23). Rephrase with commas, periods, or "and". The en dash in numeric ranges ("3–6m") is a range mark, not punctuation, and stays.
 - **Timing is always scoped to a single event date.** Never average waits across events.
 - **Build time is never displayed.** Per-drink figures are always relative at matched queue depth.
-- **Brand:** card shell `bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10`; headings `font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60`; `tabular-nums` on every number; bucket colors `bg-delo-sage` / `bg-delo-gold` / `bg-delo-terracotta`.
+- **Brand:** card shell `bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10`; headings `font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60`; `tabular-nums` on every number.
+- **Chart colors (owner-approved at the mockup gate, Aug 23):** three new Tailwind tokens in `tailwind.config.ts` — `'delo-chart-fast': '#3D7E2F'`, `'delo-chart-mid': '#C18A1F'`, `'delo-chart-slow': '#AE3A1E'` — validated CVD-safe steps of the brand's sage/gold/terracotta hue families. The raw `delo-sage`/`delo-gold` tokens FAIL colorblind and normal-vision separation as adjacent fills (ΔE 11.4) and must not be used for the bar or the delta text; the chart tokens also clear AA contrast for small semibold text where the raw tokens do not.
 - **Commits:** short imperative sentence (repo style, no `feat:` prefixes), formatted with `npx prettier --write` on touched files first, ending with:
   ```
   Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
@@ -1051,6 +1053,166 @@ git commit -m "Summarize waits: buckets, segments, group cost, and the honest co
 
 ---
 
+### Task 5b: Group sizes + distinct suspect count (gate-approved extension)
+
+Added at the mockup gate (owner-approved, Aug 23) plus the routing of Task 5's review
+finding. Two concerns, one module touch: (a) `TimingSummary.suspect` gives consumers no
+distinct suspect count — `sweepCount + strandedCount` double-counts an order that is both;
+(b) the owner approved group-size cost buckets (2 / 3 / 4+) with a minimum-count guard and
+a combined-row fallback, replacing the displayed quiet/busy split (which stays computed).
+
+**Files:**
+- Modify: `lib/orderTiming.ts`, `lib/orderTiming.test.ts`
+
+**Interfaces:**
+- Consumes: everything from Tasks 2–5.
+- Produces (Task 7 serializes, Task 8 renders — exact names):
+  - `ClassifiedOrder` gains `groupSize: number | null` — for `servedTogether` members, the
+    number of servedTogether members in their completion cluster (always ≥ 2); null otherwise.
+  - `interface GroupSizeCost { size: 2 | 3 | 4; count: number; medianSeconds: number }` —
+    `size: 4` means "4+".
+  - `GroupCost` gains `overallMedianSeconds: number` and `bySize: GroupSizeCost[]`
+    (quiet/busy fields remain, computed, undisplayed).
+  - `TimingSummary.suspect` gains `suspectCount: number` — the DISTINCT count of orders
+    that are sweep, stranded, or both. Task 8's confidence copy uses this, never the sum.
+  - Module-level `residualAgainst(model: QueueModel, o: ClassifiedOrder): number` replaces
+    the three duplicated residual closures (review minor).
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `lib/orderTiming.test.ts` (extend the existing `./orderTiming` import):
+
+```ts
+/** A held group: placements 30s apart (chained ≤180s), completions 5s apart. */
+function heldGroup(baseSeconds: number, size: number, readySeconds: number): TimedOrderInput[] {
+  return Array.from({ length: size }, (_, i) => order(baseSeconds + i * 30, readySeconds + i * 5))
+}
+
+describe('group sizes', () => {
+  it('records the servedTogether member count as groupSize; sweeps stay null', () => {
+    const { orders } = classifyOrders([
+      order(0, 1505), // stale card in the same completion cluster
+      order(1150, 1500),
+      order(1190, 1510),
+    ])
+    const byPlaced = [...orders].sort((a, b) => a.placedMs - b.placedMs)
+    expect(byPlaced[0].groupSize).toBeNull() // sweep
+    expect(byPlaced[1].groupSize).toBe(2)
+    expect(byPlaced[2].groupSize).toBe(2)
+  })
+
+  it('buckets group cost by size with the minimum-count guard', () => {
+    const fixture = [
+      ...cleanTriplets(6),
+      ...heldGroup(6000, 2, 6600),
+      ...heldGroup(7000, 2, 7600), // two pairs: 4 orders in the size-2 bucket
+      ...heldGroup(8000, 3, 8600), // 3 orders in the size-3 bucket
+      ...heldGroup(9000, 5, 9700), // 5 orders in the 4+ bucket
+    ]
+    const summary = summarize(fixture)!
+    expect(summary.groupCost).not.toBeNull()
+    expect(summary.groupCost!.bySize.map((b) => [b.size, b.count])).toEqual([
+      [2, 4],
+      [3, 3],
+      [4, 5],
+    ])
+    expect(summary.groupCost!.overallMedianSeconds).toBeGreaterThan(0)
+  })
+
+  it('falls back to the combined number when every size bucket is thin', () => {
+    const summary = summarize([...cleanTriplets(6), ...heldGroup(6000, 2, 6600)])!
+    expect(summary.groupCost).not.toBeNull()
+    expect(summary.groupCost!.bySize).toEqual([]) // 2 orders < MIN_SEGMENT_ORDERS
+    expect(typeof summary.groupCost!.overallMedianSeconds).toBe('number')
+  })
+})
+
+describe('distinct suspect count', () => {
+  it('an order that is both sweep and stranded counts once', () => {
+    // Two orders complete together; placements 1800s apart -> both sweep.
+    // The first also waited 2000s at depth 0 -> stranded too.
+    const fixture = [...cleanTriplets(6), order(5000, 7000), order(6800, 7005)]
+    const summary = summarize(fixture)!
+    expect(summary.suspect.sweepCount).toBe(2)
+    expect(summary.suspect.strandedCount).toBe(1)
+    expect(summary.suspect.suspectCount).toBe(2) // NOT 3
+  })
+})
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npm test`
+Expected: FAIL — `groupSize` / `bySize` / `suspectCount` missing.
+
+- [ ] **Step 3: Implement**
+
+In `lib/orderTiming.ts`:
+
+1. Add `groupSize: number | null` to `ClassifiedOrder` (doc comment: "servedTogether
+   members: how many were handed over together; null otherwise") and initialize `groupSize:
+   null` in the mapper.
+2. In the cluster-tagging loop, after tagging a cluster's members, set sizes:
+
+```ts
+    const togetherMembers = cluster.filter((m) => m.tag === 'servedTogether')
+    for (const member of togetherMembers) member.groupSize = togetherMembers.length
+```
+
+3. Extract the shared residual helper and use it in all three sites (stranded pass,
+   `groupCost`, `segmentComparisons`):
+
+```ts
+/** Seconds beyond what the queue model predicts for this order's depth. Positive = slower. */
+function residualAgainst(model: QueueModel, o: ClassifiedOrder): number {
+  return o.waitSeconds - (model.floorSeconds + model.perDrinkSeconds * o.queueDepth)
+}
+```
+
+4. Extend `GroupCost` / add `GroupSizeCost` exactly as the Interfaces block above; in
+   `groupCost()` add:
+
+```ts
+  const costs = together.map((o) => residualAgainst(model, o))
+  const bySize: GroupSizeCost[] = ([2, 3, 4] as const)
+    .map((size) => {
+      const members = together.filter((o) =>
+        size === 4 ? (o.groupSize ?? 0) >= 4 : o.groupSize === size
+      )
+      return {
+        size,
+        count: members.length,
+        medianSeconds: percentile(members.map((o) => residualAgainst(model, o)), 50) ?? 0,
+      }
+    })
+    .filter((bucket) => bucket.count >= MIN_SEGMENT_ORDERS)
+```
+
+   and return `{ overallMedianSeconds: percentile(costs, 50) as number, quietMedianSeconds,
+   busyMedianSeconds, bySize }` (quiet/busy computed as before).
+5. In `summarize()`, add to the suspect block:
+   `suspectCount: classified.length - clean.length` (distinct by construction), keeping
+   `sweepCount`/`strandedCount`.
+6. Fix the Task 5 fixture comment that claims "the event's median depth is 3" (nearest-rank
+   gives 2 for that data; the test is unaffected either way — say so in the comment), and
+   add a one-line comment on the counterfactual noting the all-suspect edge also yields
+   null via `percentile([], 90)`.
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `npm test`
+Expected: PASS — all suites, including Tasks 2–5's 26.
+
+- [ ] **Step 5: Commit**
+
+```bash
+npx prettier --write lib/orderTiming.ts lib/orderTiming.test.ts
+git add lib/orderTiming.ts lib/orderTiming.test.ts
+git commit -m "Bucket group costs by size and count suspects distinctly"
+```
+
+---
+
 ### Task 6: dateUtils — utcRangeForLocalDay + formatDuration
 
 **Files:**
@@ -1437,6 +1599,7 @@ git commit -m "Bound the stats queries and serve the wait-timing block"
 **Files:**
 - Create: `components/WaitTimingSection.tsx`
 - Modify: `components/DashboardSection.tsx` (imports; one insertion after the Order Count Cards grid at ~line 288; one skeleton block)
+- Modify: `tailwind.config.ts` (three chart tokens per Global Constraints: `'delo-chart-fast': '#3D7E2F'`, `'delo-chart-mid': '#C18A1F'`, `'delo-chart-slow': '#AE3A1E'`, added to the extend.colors block after the secondary palette)
 
 **Interfaces:**
 - Consumes: `TimingStats` from `@/lib/supabase`; `formatDuration` from `@/lib/dateUtils`.
@@ -1478,10 +1641,10 @@ export default function WaitTimingSection({ timing, dateLabel }: WaitTimingSecti
     return (
       <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
         <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-2">
-          The Wait
+          Order Wait Time
         </h3>
         <p className="text-description text-sm text-pretty">
-          Not enough timed orders {dateLabel} to measure waits — numbers appear once ten
+          Not enough timed orders {dateLabel} to measure waits. Numbers appear once ten
           or more drinks have been marked ready.
         </p>
       </div>
@@ -1492,7 +1655,7 @@ export default function WaitTimingSection({ timing, dateLabel }: WaitTimingSecti
     <div className="space-y-3 md:space-y-4">
       <WaitHeadlineCard timing={timing} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        <WhereTheWaitGoesCard timing={timing} />
+        <WaitBreakdownCard timing={timing} />
         <ByDrinkCard timing={timing} />
       </div>
     </div>
@@ -1501,13 +1664,13 @@ export default function WaitTimingSection({ timing, dateLabel }: WaitTimingSecti
 
 /** One adaptive sentence — the entire data-quality surface (spec, Decision 6). */
 function confidenceCopy(timing: TimingStats): string {
-  const suspectCount = timing.suspect.sweepCount + timing.suspect.strandedCount
+  const suspectCount = timing.suspect.suspectCount // distinct: never sum sweep + stranded
   if (suspectCount === 0) return `All ${timing.measured} orders look cleanly timed.`
   const counterfactual = timing.suspect.counterfactualP90Seconds
   if (counterfactual !== null && timing.p90Seconds - counterfactual >= 60) {
     return `${suspectCount} orders look marked-ready-late. Without them: ${formatDuration(counterfactual)}.`
   }
-  return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late — too few to matter.`
+  return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late. Too few to matter.`
 }
 
 function formatEventDate(dateStr: string): string {
@@ -1524,24 +1687,27 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
   const showDelta = deltaSeconds !== null && Math.abs(deltaSeconds) >= 15
 
   const segments = [
-    { label: 'Under 3m', count: timing.buckets.fast, color: 'bg-delo-sage' },
-    { label: '3–6m', count: timing.buckets.medium, color: 'bg-delo-gold' },
-    { label: 'Over 6m', count: timing.buckets.slow, color: 'bg-delo-terracotta' },
+    { label: 'Under 3m', count: timing.buckets.fast, color: 'bg-delo-chart-fast' },
+    { label: '3–6m', count: timing.buckets.medium, color: 'bg-delo-chart-mid' },
+    { label: 'Over 6m', count: timing.buckets.slow, color: 'bg-delo-chart-slow' },
   ]
 
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1 text-balance">
-        The Wait
+        Order Wait Time
       </h3>
+      <p className="font-bricolage font-semibold text-xs uppercase tracking-wider text-delo-navy/50 mt-3">
+        90% of orders ready within
+      </p>
       <p className="font-bricolage font-bold text-3xl md:text-4xl text-delo-maroon tabular-nums">
-        9 in 10 within {formatDuration(timing.p90Seconds)}
+        {formatDuration(timing.p90Seconds)}
       </p>
       <p className="font-manrope text-sm text-delo-navy/70 mt-1 tabular-nums">
-        Half within {formatDuration(timing.medianSeconds)} · {timing.measured} orders timed
+        Median {formatDuration(timing.medianSeconds)} · {timing.measured} orders
         {showDelta && prev && (
           <span
-            className={`ml-2 font-semibold ${deltaSeconds! < 0 ? 'text-delo-sage' : 'text-delo-terracotta'}`}
+            className={`ml-2 font-semibold ${deltaSeconds! < 0 ? 'text-delo-chart-fast' : 'text-delo-chart-slow'}`}
           >
             {deltaSeconds! < 0 ? '▼' : '▲'} {formatDuration(Math.abs(deltaSeconds!))}{' '}
             {deltaSeconds! < 0 ? 'faster' : 'slower'} than {formatEventDate(prev.date)}
@@ -1567,7 +1733,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
             className="inline-flex items-center gap-1.5 font-manrope text-sm text-delo-navy/70 tabular-nums"
           >
             <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
-            {s.count} {s.label.toLowerCase()}
+            {Math.round((s.count / timing.measured) * 100)}% {s.label.toLowerCase()}
           </span>
         ))}
       </div>
@@ -1579,67 +1745,67 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
   )
 }
 
-function WhereTheWaitGoesCard({ timing }: { timing: TimingStats }) {
+/** One stat row: plain label left, tabular value right. */
+function StatRow({
+  label,
+  value,
+  indent = false,
+}: {
+  label: string
+  value: string
+  indent?: boolean
+}) {
+  return (
+    <div className={`flex items-center justify-between ${indent ? 'pl-5' : ''}`}>
+      <span
+        className={`font-manrope text-sm ${indent ? 'text-delo-navy/60' : 'text-delo-navy/80'}`}
+      >
+        {label}
+      </span>
+      <span className="font-manrope font-semibold text-sm text-delo-navy tabular-nums">
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function WaitBreakdownCard({ timing }: { timing: TimingStats }) {
   const { model, groupCost, servedTogether } = timing
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-3 text-balance">
-        Where the Wait Goes
+        Wait Time Breakdown
       </h3>
       {model ? (
-        <div className="space-y-2 font-manrope text-sm text-delo-navy/80">
-          <p className="tabular-nums">
-            With nobody ahead: about{' '}
-            <span className="font-semibold text-delo-navy">
-              {formatDuration(model.floorSeconds)}
-            </span>
-            .
-          </p>
-          <p className="tabular-nums">
-            Each drink in the line adds about{' '}
-            <span className="font-semibold text-delo-navy">
-              {formatDuration(model.perDrinkSeconds)}
-            </span>
-            .
-          </p>
+        <div className="space-y-2">
+          <StatRow label="Drink baseline" value={`~${formatDuration(model.floorSeconds)}`} />
+          <StatRow label="Per order ahead" value={`+${formatDuration(model.perDrinkSeconds)}`} />
+          {groupCost && (
+            <>
+              <StatRow
+                label="Held for a group"
+                value={`+${formatDuration(Math.max(0, groupCost.overallMedianSeconds))}`}
+              />
+              {groupCost.bySize.map((bucket) => (
+                <StatRow
+                  key={bucket.size}
+                  indent
+                  label={`Group of ${bucket.size === 4 ? '4+' : bucket.size}`}
+                  value={`+${formatDuration(Math.max(0, bucket.medianSeconds))}`}
+                />
+              ))}
+            </>
+          )}
+          {!groupCost && servedTogether.count === 0 && (
+            <p className="text-description text-xs mt-1">No orders were handed over together.</p>
+          )}
         </div>
       ) : (
         <p className="text-description text-sm text-pretty">
-          Not enough solo-served orders to split the wait yet — check back after the next
+          Not enough solo-served orders to split the wait yet. Check back after the next
           event.
         </p>
       )}
-      <div className="mt-4 pt-4 border-t border-delo-navy/10">
-        {servedTogether.count === 0 ? (
-          <p className="text-description text-sm">No orders were handed over together.</p>
-        ) : groupCost && groupCost.quietMedianSeconds !== null && groupCost.busyMedianSeconds !== null ? (
-          <p className="font-manrope text-sm text-delo-navy/80 tabular-nums text-pretty">
-            Orders handed over together waited about{' '}
-            <span className="font-semibold text-delo-navy">
-              {formatDuration(Math.max(0, groupCost.quietMedianSeconds))}
-            </span>{' '}
-            extra when it was quiet —{' '}
-            <span className="font-semibold text-delo-navy">
-              {formatDuration(Math.max(0, groupCost.busyMedianSeconds))}
-            </span>{' '}
-            when the line was deep.
-          </p>
-        ) : groupCost ? (
-          <p className="font-manrope text-sm text-delo-navy/80 tabular-nums text-pretty">
-            Orders handed over together waited about{' '}
-            <span className="font-semibold text-delo-navy">
-              {formatDuration(
-                Math.max(0, groupCost.quietMedianSeconds ?? groupCost.busyMedianSeconds ?? 0)
-              )}
-            </span>{' '}
-            extra.
-          </p>
-        ) : (
-          <p className="font-manrope text-sm text-delo-navy/80 tabular-nums">
-            {servedTogether.count} orders were handed over together.
-          </p>
-        )}
-      </div>
     </div>
   )
 }
@@ -1649,7 +1815,7 @@ function ByDrinkCard({ timing }: { timing: TimingStats }) {
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-3 text-balance">
-        By Drink
+        By Drink vs. the Average
       </h3>
       {!hasData ? (
         <p className="text-description text-sm text-pretty">
@@ -1657,9 +1823,6 @@ function ByDrinkCard({ timing }: { timing: TimingStats }) {
         </p>
       ) : (
         <>
-          <p className="text-description text-xs mb-3 text-pretty">
-            Compared with the average drink facing the same line.
-          </p>
           <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
             {timing.perDrink.map((drink) => (
               <div key={drink.name} className="flex items-center justify-between">
@@ -1692,8 +1855,8 @@ function DeltaChip({ deltaSeconds }: { deltaSeconds: number }) {
         negligible
           ? 'text-delo-navy/50'
           : deltaSeconds > 0
-            ? 'text-delo-terracotta'
-            : 'text-delo-sage'
+            ? 'text-delo-chart-slow'
+            : 'text-delo-chart-fast'
       }`}
     >
       {negligible
