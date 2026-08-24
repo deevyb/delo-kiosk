@@ -66,3 +66,94 @@ export function queueDepthAt(orders: TimedOrderInput[], instantIso: string): num
       Date.parse(o.ready_at) > instant
   ).length
 }
+
+export type WaitTag = 'servedAlone' | 'servedTogether' | 'sweep'
+
+export interface ClassifiedOrder {
+  id: string
+  item: string
+  temperature: string | null
+  placedMs: number
+  readyMs: number
+  waitSeconds: number
+  queueDepth: number
+  tag: WaitTag
+  stranded: boolean
+}
+
+export interface QueueModel {
+  floorSeconds: number
+  perDrinkSeconds: number
+}
+
+export interface ClassificationResult {
+  orders: ClassifiedOrder[]
+  model: QueueModel | null
+}
+
+/**
+ * Tag every measurable order. The discriminator (spec, "How to detect groups"):
+ * completions clustered + placements clustered = a held group (servedTogether);
+ * completions clustered + placements spread = a catch-up sweep. Requiring BOTH
+ * is what survives a rush, where placements are continuously close but
+ * completions are never simultaneous unless deliberately held.
+ */
+export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult {
+  const measurable: ClassifiedOrder[] = orders
+    .filter((o) => o.status === 'ready' && o.ready_at !== null)
+    .map((o) => {
+      const placedMs = Date.parse(o.created_at)
+      const readyMs = Date.parse(o.ready_at as string)
+      return {
+        id: o.id,
+        item: o.item,
+        temperature: o.modifiers?.temperature ?? null,
+        placedMs,
+        readyMs,
+        // Clamp for clock-skew safety, mirroring formatPrepTime.
+        waitSeconds: Math.max(0, (readyMs - placedMs) / 1000),
+        queueDepth: 0,
+        tag: 'servedAlone' as WaitTag,
+        stranded: false,
+      }
+    })
+    .sort((a, b) => a.readyMs - b.readyMs)
+
+  // Depth at placement: measurable orders only — same exclusion rule as
+  // queueDepthAt, and O(n²) is fine at ~150 orders per event.
+  for (const o of measurable) {
+    o.queueDepth = measurable.filter(
+      (other) => other !== o && other.placedMs <= o.placedMs && other.readyMs > o.placedMs
+    ).length
+  }
+
+  // Completion clusters: consecutive completions under READY_CLUSTER_SECONDS
+  // apart. 30s is below the physical hands-on floor for one drink, so
+  // sequential builds can never land in one cluster.
+  const clusters: ClassifiedOrder[][] = []
+  let clusterStart = 0
+  for (let i = 1; i <= measurable.length; i++) {
+    const gapMs =
+      i < measurable.length ? measurable[i].readyMs - measurable[i - 1].readyMs : Infinity
+    if (gapMs >= READY_CLUSTER_SECONDS * 1000) {
+      clusters.push(measurable.slice(clusterStart, i))
+      clusterStart = i
+    }
+  }
+
+  for (const cluster of clusters) {
+    if (cluster.length < 2) continue
+    for (const member of cluster) {
+      // Per-order, not per-cluster: a mixed cluster (a group plus one stale
+      // card bumped in the same moment) splits correctly.
+      const hasPlacedNeighbor = cluster.some(
+        (other) =>
+          other !== member &&
+          Math.abs(other.placedMs - member.placedMs) <= PLACED_CLUSTER_SECONDS * 1000
+      )
+      member.tag = hasPlacedNeighbor ? 'servedTogether' : 'sweep'
+    }
+  }
+
+  return { orders: measurable, model: null } // model arrives in the stranded pass (Task 4)
+}
