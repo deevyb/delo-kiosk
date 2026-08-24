@@ -19,7 +19,7 @@ interface DrinkCardProps {
 
 // Easing curve for entrance animation
 // This one creates a smooth deceleration - fast start, gentle stop
-const smoothEase = [0.65, 0.05, 0, 1] as const
+export const smoothEase = [0.65, 0.05, 0, 1] as const
 
 // Entrance animation - how cards appear when page loads
 const entranceVariants = {

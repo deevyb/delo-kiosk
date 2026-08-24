@@ -4,14 +4,12 @@ import { motion, useReducedMotion } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { Order } from '@/lib/supabase'
 import { getVenmoConfig, buildVenmoUrl } from '@/lib/venmo'
+import { smoothEase } from './DrinkCard'
 
 interface TapToPayProps {
   order: Order
   onDismiss: () => void
 }
-
-// Matches DrinkCard's entrance easing (see its SPRING PHYSICS GUIDE)
-const smoothEase = [0.65, 0.05, 0, 1] as const
 
 // reduceMotion is `boolean | null` — useReducedMotion returns null before it knows
 const enter = (delay: number, reduceMotion: boolean | null) => ({
@@ -57,6 +55,19 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
         className="flex-1 flex flex-col items-center justify-center"
         {...enter(0, reduceMotion)}
       >
+        {/* Checkmark icon — same mark as the plain confirmation */}
+        <div className="w-16 h-16 rounded-full bg-delo-maroon/10 flex items-center justify-center mx-auto mb-4">
+          <svg
+            className="w-8 h-8 text-delo-maroon"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+
         <p className="text-description text-delo-navy/60 mb-3">On it!</p>
         <h1 className="font-bricolage font-bold text-2xl md:text-3xl text-delo-navy">
           {order.customer_name}

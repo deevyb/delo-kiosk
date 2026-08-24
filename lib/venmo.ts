@@ -20,11 +20,12 @@ export function getVenmoConfig(): VenmoConfig | null {
 }
 
 /**
- * Canonical Venmo universal link — single source of truth for the
- * on-screen QR and the URL written to the NFC stickers (see
- * docs/tap-to-pay-setup.md). Must stay an https venmo.com link:
- * iOS background NFC reading and camera QR scanning both ignore
- * venmo:// schemes.
+ * The URL format the on-screen QR encodes. Physical NFC stickers are
+ * hand-written to the same format in a third-party app (see
+ * docs/tap-to-pay-setup.md) — nothing in code links them, only
+ * convention, so changing this format means rewriting every sticker.
+ * Must stay an https venmo.com link: iOS background NFC reading and
+ * camera QR scanning both ignore venmo:// schemes.
  */
 export function buildVenmoUrl(config: VenmoConfig, note = 'Delo Coffee'): string {
   return `https://venmo.com/u/${config.handle}?txn=pay&amount=${config.price}&note=${encodeURIComponent(note)}`
