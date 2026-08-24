@@ -7,6 +7,7 @@ import 'react-day-picker/style.css'
 import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
 import { getTodayDateString } from '@/lib/dateUtils'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import WaitTimingSection from './WaitTimingSection'
 
 /**
  * DashboardSection - Stats overview and CSV export
@@ -287,6 +288,12 @@ export default function DashboardSection() {
             />
           </div>
 
+          {/* Wait timing */}
+          <WaitTimingSection
+            timing={stats.timing}
+            dateLabel={isViewingToday ? 'today' : `on ${formatDateLabel(selectedDate)}`}
+          />
+
           {/* Popular Drinks + Modifier Preferences */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <PopularDrinksList drinks={stats.popularDrinks} />
@@ -484,6 +491,7 @@ function StatsLoadingSkeleton() {
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-32" />
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-32" />
       </div>
+      <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-40" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />

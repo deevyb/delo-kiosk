@@ -13,6 +13,12 @@ const config: Config = {
         'delo-terracotta': '#C85A2E',
         'delo-sage': '#8B9E8B',
         'delo-gold': '#D4A574',
+        // Chart palette: the only colors that encode data. Held apart from the
+        // brand secondaries, which fail colorblind separation and AA contrast
+        // against white at this size.
+        'delo-chart-fast': '#3D7E2F',
+        'delo-chart-mid': '#C18A1F',
+        'delo-chart-slow': '#AE3A1E',
       },
       fontFamily: {
         yatra: ['Yatra One', 'cursive'],
