@@ -44,7 +44,7 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
         <motion.button
           onClick={onDismiss}
           whileTap={{ scale: 0.97 }}
-          className="min-h-[44px] px-3 font-manrope text-sm text-delo-navy/50 hover:text-delo-navy transition-colors"
+          className="min-h-[44px] px-3 font-manrope text-sm font-semibold text-delo-maroon hover:text-delo-maroon/80 transition-colors"
         >
           New order
         </motion.button>
@@ -99,9 +99,6 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
       <motion.div className="flex flex-col items-center mt-6" {...enter(0.45, reduceMotion)}>
         <p className="font-bricolage font-semibold text-xl md:text-2xl text-delo-navy">
           Tap your phone under here
-        </p>
-        <p className="font-manrope text-sm text-delo-navy/60 mt-1">
-          slide it underneath — Venmo pops right up
         </p>
         <motion.div
           aria-hidden="true"
