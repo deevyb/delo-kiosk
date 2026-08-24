@@ -147,6 +147,18 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
   drink measures the remake. The trigger also makes the columns forgery-proof
   despite the public-UPDATE RLS policy (backlog #1).
 
+### Wait Timing
+
+The dashboard's wait analytics measure the **customer's wait** (placed → drink
+in hand), not kitchen efficiency. All math lives in `lib/orderTiming.ts` (pure,
+unit-tested — `npm test`): completions clustered + placements clustered =
+"served together" (a held group, real wait, its own segment); completions
+clustered + placements spread = a catch-up sweep (suspect); a wait far beyond
+what queue depth predicts = a stranded card (suspect). Suspects are counted
+and captioned on the dashboard, never excluded from headline numbers. p90 is
+the headline everywhere; there is deliberately no mean. Full rationale:
+`docs/specs/2026-08-23-customer-wait-times-design.md`.
+
 ---
 
 ## API Endpoints
@@ -166,6 +178,10 @@ interface DashboardStats {
   allTime: OrderCounts // Orders up to and including the target date
   popularDrinks: DrinkCount[] // Top 20 drinks on the target date
   modifierBreakdown: Record<string, ModifierOption[]> // Modifier stats for the target date
+  timing: TimingSummary | null // Wait-time analytics for the target date, plus the
+  // previous event's p90 for the dashboard's delta chip. null when the event has
+  // fewer than MIN_TIMED_ORDERS ready orders to measure. Full shape in
+  // lib/orderTiming.ts; design rationale in "Wait Timing" above.
 }
 
 interface OrderCounts {
@@ -330,12 +346,17 @@ Using Framer Motion throughout for consistency:
 
 ## Testing Strategy
 
-**There is no test framework installed, and that is a deliberate choice** — this is a small
-app with one operator, and the cost of maintaining a suite has not been worth it. Earlier
-versions of this document described a Vitest and Playwright setup that never existed; don't
-plan work around it.
+**Vitest is installed, but scoped narrowly.** `npm test` runs the unit suite for pure logic
+in `lib/` only (`vitest.config.ts` includes just `lib/**/*.test.ts`); it's dev-only, with no
+CI gate. It exists because the wait-timing math in `lib/orderTiming.ts` is exactly the kind
+of logic that's easy to get subtly wrong and hard to eyeball-check — 36 tests total, across
+`orderTiming.test.ts` and the existing `dateUtils.test.ts`. Component and integration testing
+is still out of scope: this is a small app with one operator, and the cost hasn't been worth
+it there. Earlier versions of this document described a broader Vitest and Playwright setup
+that never existed — that warning no longer applies to `lib/`, but still applies to anything
+claiming test coverage elsewhere.
 
-What substitutes for tests:
+What substitutes for tests outside `lib/`:
 
 - **Reviews before merge.** Risky logic (anything touching order state or the sync) gets
   reviewed from several independent angles rather than once — the kitchen sync work found
@@ -345,8 +366,8 @@ What substitutes for tests:
 - **Measured browser verification** rather than "looks right" — count network requests,
   time how long a recovery takes, and check the numbers instead of trusting a screenshot.
 
-If a suite is ever added, the highest-value targets are `mergeOrders`, the sync's staleness
-handling, and `dateUtils`.
+If the suite grows, `mergeOrders` and the sync's staleness handling are the next
+highest-value targets.
 
 ### Manual Testing Checklist
 
