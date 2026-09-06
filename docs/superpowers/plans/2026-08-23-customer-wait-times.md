@@ -121,6 +121,12 @@ ALTER TABLE orders
   ADD COLUMN started_at TIMESTAMPTZ,
   ADD COLUMN ready_at   TIMESTAMPTZ;
 
+-- Backfill BEFORE installing the trigger: the trigger resets client-written
+-- values, and would swallow this UPDATE (learned the hard way at apply time).
+-- Backfill (spec Decision 10): correct, not a guess — the only write path
+-- always sets a status, so no code path edits a ready order without moving it.
+UPDATE orders SET ready_at = updated_at WHERE status = 'ready';
+
 CREATE OR REPLACE FUNCTION set_order_timestamps() RETURNS trigger AS $$
 BEGIN
   -- Server-owned columns. Ignore whatever the client sent, then apply
@@ -149,10 +155,6 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_order_timestamps
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION set_order_timestamps();
-
--- Backfill (spec Decision 10): correct, not a guess — the only write path
--- always sets a status, so no code path edits a ready order without moving it.
-UPDATE orders SET ready_at = updated_at WHERE status = 'ready';
 
 CREATE INDEX idx_orders_created_at_status ON orders(created_at DESC, status);
 ```

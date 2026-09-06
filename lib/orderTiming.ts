@@ -52,8 +52,12 @@ export interface TimedOrderInput {
   created_at: string
   ready_at: string | null
   modifiers: { temperature?: string } | null
-  /** Which barista handed it over. Partitions completion clustering (spec, F4). */
-  claimed_by?: string | null
+  /**
+   * Which barista handed it over. Partitions completion clustering (spec, F4).
+   * Load-bearing: required (not optional) so dropping it from a query's column
+   * list is a compile error, not a silent collapse into one shared stream.
+   */
+  claimed_by: string | null
 }
 
 /** Nearest-rank percentile. p50 of an even-length list is the lower middle. */

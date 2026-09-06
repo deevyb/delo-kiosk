@@ -128,6 +128,7 @@ CREATE TABLE orders (
 -- Indexes for performance
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX idx_orders_created_at_status ON orders(created_at DESC, status);
 CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = true;
 ```
 
@@ -146,6 +147,10 @@ CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = tr
   on first claim; both are cleared on any return to `placed`, so a remade
   drink measures the remake. The trigger also makes the columns forgery-proof
   despite the public-UPDATE RLS policy (backlog #1).
+- The trigger's full SQL (correct ordering: backfill runs BEFORE the trigger
+  is installed, since the trigger resets client-written values and would
+  otherwise swallow the backfill) lives in
+  `docs/specs/2026-08-23-customer-wait-times-design.md`, Build §1.
 
 ### Wait Timing
 
@@ -178,7 +183,7 @@ interface DashboardStats {
   allTime: OrderCounts // Orders up to and including the target date
   popularDrinks: DrinkCount[] // Top 20 drinks on the target date
   modifierBreakdown: Record<string, ModifierOption[]> // Modifier stats for the target date
-  timing: TimingSummary | null // Wait-time analytics for the target date, plus the
+  timing: TimingStats | null // Wait-time analytics for the target date, plus the
   // previous event's p90 for the dashboard's delta chip. null when the event has
   // fewer than MIN_TIMED_ORDERS ready orders to measure. Full shape in
   // lib/orderTiming.ts; design rationale in "Wait Timing" above.
@@ -349,7 +354,7 @@ Using Framer Motion throughout for consistency:
 **Vitest is installed, but scoped narrowly.** `npm test` runs the unit suite for pure logic
 in `lib/` only (`vitest.config.ts` includes just `lib/**/*.test.ts`); it's dev-only, with no
 CI gate. It exists because the wait-timing math in `lib/orderTiming.ts` is exactly the kind
-of logic that's easy to get subtly wrong and hard to eyeball-check — 36 tests total, across
+of logic that's easy to get subtly wrong and hard to eyeball-check — 48 tests total, across
 `orderTiming.test.ts` and the existing `dateUtils.test.ts`. Component and integration testing
 is still out of scope: this is a small app with one operator, and the cost hasn't been worth
 it there. Earlier versions of this document described a broader Vitest and Playwright setup

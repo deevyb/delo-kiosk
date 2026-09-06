@@ -27,6 +27,7 @@ export function order(
     created_at: at(placedSeconds),
     ready_at: readySeconds === null ? null : at(readySeconds),
     modifiers: { temperature: 'Hot' },
+    claimed_by: null,
     ...overrides,
   }
 }
