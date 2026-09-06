@@ -89,7 +89,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
   // a non-round edge would need its own formatter, not integer division.
   const fastMinutes = BUCKET_FAST_SECONDS / 60
   const slowMinutes = BUCKET_SLOW_SECONDS / 60
-  const segments = [
+  const rawSegments = [
     { label: `Under ${fastMinutes}m`, count: timing.buckets.fast, color: 'bg-delo-chart-fast' },
     {
       label: `${fastMinutes}–${slowMinutes}m`,
@@ -97,11 +97,21 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
       color: 'bg-delo-chart-mid',
     },
     { label: `Over ${slowMinutes}m`, count: timing.buckets.slow, color: 'bg-delo-chart-slow' },
-  ].map((segment) => ({
-    ...segment,
-    share: (segment.count / total) * 100,
-    percent: Math.round((segment.count / total) * 100),
-  }))
+  ].map((segment) => ({ ...segment, share: (segment.count / total) * 100 }))
+
+  // Largest-remainder method: floor each share, then hand the leftover whole
+  // points (100 minus the sum of floors) to the segments with the biggest
+  // fractional remainders, so the displayed percentages always sum to 100.
+  const floors = rawSegments.map((s) => Math.floor(s.share))
+  const remainder = 100 - floors.reduce((sum, f) => sum + f, 0)
+  const remainderOrder = rawSegments
+    .map((s, i) => ({ i, frac: s.share - floors[i] }))
+    .sort((a, b) => b.frac - a.frac)
+  const percents = [...floors]
+  for (let k = 0; k < remainder; k++) {
+    percents[remainderOrder[k].i]++
+  }
+  const segments = rawSegments.map((segment, i) => ({ ...segment, percent: percents[i] }))
 
   // Same wording the legend prints, so the bar reads identically to a screen reader.
   const barLabel = `Wait distribution: ${segments
@@ -113,10 +123,10 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1 text-balance">
         Order Wait Time
       </h3>
-      <p className="font-bricolage font-semibold text-[11px] md:text-xs uppercase tracking-wider text-delo-navy/50 mt-2.5 md:mt-3">
+      <p className="font-bricolage font-semibold text-xs uppercase tracking-wider text-delo-navy/50 mt-2.5 md:mt-3">
         90% of orders ready within
       </p>
-      <p className="font-bricolage font-bold text-3xl md:text-4xl leading-[1.15] text-delo-maroon tabular-nums">
+      <p className="font-bricolage font-bold text-3xl md:text-4xl text-delo-maroon tabular-nums">
         {formatDuration(timing.p90Seconds)}
       </p>
       {/* Flex-wrap, not a second paragraph: the delta sits inline on the iPad and
@@ -148,6 +158,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
           .map((s) => (
             <div
               key={s.label}
+              aria-hidden="true"
               className={`${s.color} min-w-[3px] transition-[width] duration-300 ease-out motion-reduce:transition-none`}
               style={{ width: `${s.share}%` }}
             />
@@ -157,7 +168,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
         {segments.map((s) => (
           <span
             key={s.label}
-            className="inline-flex items-center gap-1.5 font-manrope text-[13px] md:text-sm text-delo-navy/70 tabular-nums"
+            className="inline-flex items-center gap-1.5 font-manrope text-xs md:text-sm text-delo-navy/70 tabular-nums"
           >
             <span aria-hidden="true" className={`w-2.5 h-2.5 shrink-0 rounded-full ${s.color}`} />
             {s.percent}% {s.label.toLowerCase()}
@@ -165,7 +176,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
         ))}
       </div>
 
-      <p className="text-description text-xs md:text-[13px] leading-relaxed mt-3 text-pretty">
+      <p className="text-description text-xs leading-relaxed mt-3 text-pretty">
         {confidenceCopy(timing)}
       </p>
     </div>
@@ -252,7 +263,7 @@ function ByDrinkCard({ timing }: { timing: TimingStats }) {
           <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
             {timing.perDrink.map((drink) => (
               <div key={drink.name} className="flex items-center justify-between gap-3">
-                <span className="font-manrope text-[15px] text-delo-navy">{drink.name}</span>
+                <span className="font-manrope text-sm text-delo-navy">{drink.name}</span>
                 <DeltaChip deltaSeconds={drink.deltaSeconds} />
               </div>
             ))}
