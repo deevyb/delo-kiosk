@@ -96,6 +96,11 @@ delo-kiosk/
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
    ADMIN_PASSCODE=your_passcode
+
+   # Optional — Venmo handle for Tap to Pay, no @ (see docs/tap-to-pay-setup.md)
+   NEXT_PUBLIC_VENMO_HANDLE=
+   # Optional — flat per-drink event price, e.g. 6.00; leave either empty to hide the feature
+   NEXT_PUBLIC_VENMO_PRICE=
    ```
 
 4. Run the development server:

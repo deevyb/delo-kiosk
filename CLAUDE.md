@@ -44,7 +44,7 @@ Inspired by the _delo_ — a traditional Indian courtyard where strangers become
 - Fully editable menu — nothing hardcoded
 - iPad landscape only
 
-**Out of Scope:** Payments, prices, order numbers, multi-item orders, customer accounts
+**Out of Scope:** Payment processing, prices, order numbers, multi-item orders, customer accounts
 
 ---
 

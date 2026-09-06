@@ -40,7 +40,7 @@ screen is toggled per event; free events keep today's confirmation exactly.
   lower placement avoids interference). That geometry is why the customer slides
   their phone **under, not on top**: top edge first, it lands on the sticker.
 - No prices go into the menu system or schema — the flat price lives in env
-  config only. Payment *processing* stays out of scope; the app only links out.
+  config only. Payment _processing_ stays out of scope; the app only links out.
 - Venmo handle is swappable config (owner may later create a business profile —
   personal profiles carry seller-pattern freeze risk; rewriting a tag takes 30s).
 
