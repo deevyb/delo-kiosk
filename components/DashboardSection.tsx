@@ -494,11 +494,7 @@ function StatsLoadingSkeleton() {
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
       </div>
-      <div className="card-admin h-40" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        <div className="card-admin h-36" />
-        <div className="card-admin h-36" />
-      </div>
+      <div className="card-admin h-96" />
     </div>
   )
 }

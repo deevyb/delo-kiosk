@@ -5,11 +5,12 @@ import { formatDuration, formatEventDate } from '@/lib/dateUtils'
 import { MIN_TIMED_ORDERS, BUCKET_FAST_SECONDS, BUCKET_SLOW_SECONDS } from '@/lib/orderTiming'
 
 /**
- * Wait analytics for one event day. Three cards: the wait (p90 hero + buckets +
- * confidence sentence), where the wait goes (floor / line / holding cost), and
- * by-drink comparison at matched queue depth. Copy rules (spec, Decisions 5-6):
- * segments are "served together/alone"; suspects are captioned, never excluded;
- * per-drink numbers are relative, never absolute build times; no shame framing.
+ * Wait analytics for one event day in a single card: the p90 hero with its
+ * bucket bar, legend and confidence sentence, then a divider and two columns
+ * underneath (where the wait goes / by-drink comparison at matched queue
+ * depth). Copy rules (spec, Decisions 5-6): segments are "served
+ * together/alone"; suspects are captioned, never excluded; per-drink numbers
+ * are relative, never absolute build times; no shame framing.
  *
  * Motion budget: none of its own. The dashboard already fades this whole block
  * in once on mount, so the only transition here is the bucket bar re-sizing
@@ -24,6 +25,10 @@ const MIN_DELTA_CHIP_SECONDS = 15
 const MIN_COUNTERFACTUAL_GAP_SECONDS = 60
 /** Below this many seconds of delta, a drink's comparison chip reads "about average" instead of a number. */
 const NEGLIGIBLE_DRINK_DELTA_SECONDS = 10
+
+/** Sub-section label inside the card: smaller and lighter than the card's own h3. */
+const SUB_LABEL_CLASS =
+  'font-bricolage font-semibold text-xs uppercase tracking-wider text-delo-navy/50 mb-2'
 
 interface WaitTimingSectionProps {
   timing: TimingStats | null
@@ -46,11 +51,15 @@ export default function WaitTimingSection({ timing, dateLabel }: WaitTimingSecti
   }
 
   return (
-    <div className="space-y-3 md:space-y-4">
-      <WaitHeadlineCard timing={timing} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        <WaitBreakdownCard timing={timing} />
-        <ByDrinkCard timing={timing} />
+    <div className="card-admin">
+      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1 text-balance">
+        Order Wait Time
+      </h3>
+      <WaitHeadline timing={timing} />
+      <div className="border-t border-delo-navy/10 my-4" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BreakdownColumn timing={timing} />
+        <ByDrinkColumn timing={timing} />
       </div>
     </div>
   )
@@ -77,7 +86,7 @@ function confidenceCopy(timing: TimingStats): string {
   return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late. Too few to matter.`
 }
 
-function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
+function WaitHeadline({ timing }: { timing: TimingStats }) {
   const prev = timing.previousEvent
   const deltaSeconds = prev ? timing.p90Seconds - prev.p90Seconds : null
   const showDelta = deltaSeconds !== null && Math.abs(deltaSeconds) >= MIN_DELTA_CHIP_SECONDS
@@ -119,10 +128,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
     .join(', ')}`
 
   return (
-    <div className="card-admin">
-      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1 text-balance">
-        Order Wait Time
-      </h3>
+    <>
       <p className="font-bricolage font-semibold text-xs uppercase tracking-wider text-delo-navy/50 mt-2.5 md:mt-3">
         90% of orders ready within
       </p>
@@ -164,22 +170,27 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
             />
           ))}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 md:gap-x-4 mt-2">
-        {segments.map((s) => (
-          <span
-            key={s.label}
-            className="inline-flex items-center gap-1.5 font-manrope text-xs md:text-sm text-delo-navy/70 tabular-nums"
-          >
-            <span aria-hidden="true" className={`w-2.5 h-2.5 shrink-0 rounded-full ${s.color}`} />
-            {s.percent}% {s.label.toLowerCase()}
-          </span>
-        ))}
-      </div>
 
-      <p className="text-description text-xs leading-relaxed mt-3 text-pretty">
-        {confidenceCopy(timing)}
-      </p>
-    </div>
+      {/* Legend left, confidence sentence right, one row on the iPad. The
+          sentence is width-capped so a long counterfactual cannot crush the
+          swatches, and wraps below them once the row runs out of width. */}
+      <div className="flex items-center justify-between flex-wrap gap-x-4 gap-y-2 mt-2">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 md:gap-x-4">
+          {segments.map((s) => (
+            <span
+              key={s.label}
+              className="inline-flex items-center gap-1.5 font-manrope text-xs md:text-sm text-delo-navy/70 tabular-nums"
+            >
+              <span aria-hidden="true" className={`w-2.5 h-2.5 shrink-0 rounded-full ${s.color}`} />
+              {s.percent}% {s.label.toLowerCase()}
+            </span>
+          ))}
+        </div>
+        <p className="text-description text-xs leading-relaxed text-pretty md:max-w-[50%] md:text-right">
+          {confidenceCopy(timing)}
+        </p>
+      </div>
+    </>
   )
 }
 
@@ -207,13 +218,11 @@ function StatRow({
   )
 }
 
-function WaitBreakdownCard({ timing }: { timing: TimingStats }) {
+function BreakdownColumn({ timing }: { timing: TimingStats }) {
   const { model, groupCost, servedTogether } = timing
   return (
-    <div className="card-admin">
-      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-3 text-balance">
-        Wait Time Breakdown
-      </h3>
+    <div>
+      <p className={SUB_LABEL_CLASS}>Breakdown</p>
       {model ? (
         <div className="space-y-2">
           <StatRow label="Drink baseline" value={`~${formatDuration(model.floorSeconds)}`} />
@@ -247,13 +256,11 @@ function WaitBreakdownCard({ timing }: { timing: TimingStats }) {
   )
 }
 
-function ByDrinkCard({ timing }: { timing: TimingStats }) {
+function ByDrinkColumn({ timing }: { timing: TimingStats }) {
   const hasData = timing.perDrink.length > 0
   return (
-    <div className="card-admin">
-      <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-3 text-balance">
-        By Drink vs. the Average
-      </h3>
+    <div>
+      <p className={SUB_LABEL_CLASS}>By Drink vs. the Average</p>
       {!hasData ? (
         <p className="text-description text-sm text-pretty">
           Not enough data to compare drinks fairly yet.
