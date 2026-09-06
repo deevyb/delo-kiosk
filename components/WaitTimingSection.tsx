@@ -69,7 +69,7 @@ function confidenceCopy(timing: TimingStats): string {
     return `All ${timing.measured} orders look cleanly timed.`
   }
   if (counterfactual === null) {
-    return `${suspectCount} orders look marked-ready-late. Too few cleanly timed orders to say what the day would have looked like without them.`
+    return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late. Too few cleanly timed orders to say what the day would have looked like without ${suspectCount === 1 ? 'it' : 'them'}.`
   }
   if (timing.p90Seconds - counterfactual >= MIN_COUNTERFACTUAL_GAP_SECONDS) {
     return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late. Without ${suspectCount === 1 ? 'it' : 'them'}: ${formatDuration(counterfactual)}.`
