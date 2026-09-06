@@ -38,6 +38,12 @@ export const MIN_SEGMENT_ORDERS = 3
  * orders, and it reads as the day the owner nearly had.
  */
 export const MIN_COUNTERFACTUAL_ORDERS = 5
+/**
+ * How far the queue model's slope may move when its single worst-fitting point
+ * is dropped. Halving or doubling means one order was holding the line up;
+ * see fitFloorAndLine.
+ */
+export const FIT_STABILITY_FACTOR = 2
 
 export interface TimedOrderInput {
   id: string
@@ -278,10 +284,48 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
  *
  * Returns null rather than nonsense: needs MIN_MODEL_POINTS points, 3+
  * distinct depths, a positive slope, and a positive floor (spec, Build §2).
+ *
+ * Then one leave-one-out check, because the median of slopes is only robust
+ * while the honest points supply most of the pairs. Same-depth pairs are
+ * skipped, so a day whose solo orders sit at two depths near the point floor
+ * contributes almost none — and a single forgotten card out at a third,
+ * extreme depth can own the majority and drag the median to itself. A fit
+ * whose slope halves or doubles when one point leaves is a fit that point
+ * owns; publishing it would let that card mask itself from the stranded flag
+ * AND corrupt the per-order-ahead number the dashboard prints. Returning null
+ * is honest degradation: the UI's "too few solo-served orders" branch already
+ * covers it. One validation pass, never refit to convergence — the check runs
+ * once and never re-flags.
  */
 export function fitFloorAndLine(
   points: { depth: number; waitSeconds: number }[]
 ): QueueModel | null {
+  const model = theilSen(points)
+  if (!model) return null
+
+  let worstIndex = 0
+  let worstResidual = -1
+  for (let i = 0; i < points.length; i++) {
+    const residual = Math.abs(
+      points[i].waitSeconds - (model.floorSeconds + model.perDrinkSeconds * points[i].depth)
+    )
+    if (residual > worstResidual) {
+      worstResidual = residual
+      worstIndex = i
+    }
+  }
+
+  const withoutWorst = theilSen(points.filter((_, i) => i !== worstIndex))
+  if (!withoutWorst) return null
+  const slope = model.perDrinkSeconds
+  const looSlope = withoutWorst.perDrinkSeconds
+  if (looSlope > FIT_STABILITY_FACTOR * slope || looSlope < slope / FIT_STABILITY_FACTOR)
+    return null
+  return model
+}
+
+/** The fit itself, with its own guards. Called twice: once whole, once leave-one-out. */
+function theilSen(points: { depth: number; waitSeconds: number }[]): QueueModel | null {
   if (points.length < MIN_MODEL_POINTS) return null
   if (new Set(points.map((p) => p.depth)).size < 3) return null
   const pairSlopes: number[] = []

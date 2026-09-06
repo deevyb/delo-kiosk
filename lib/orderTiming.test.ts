@@ -491,3 +491,57 @@ describe('the counterfactual needs something to stand on', () => {
     expect(summary.suspect.counterfactualP90Seconds).toBe(150)
   })
 })
+
+describe('the fit refuses a line one order owns', () => {
+  /**
+   * Six solo orders at depth 0 and one at depth 1 sit on the honest
+   * 120s + 60s-per-drink line. One card is then forgotten behind a held party
+   * of five and handed over 15 minutes later, at depth 5 — the only point out
+   * there. Theil-Sen skips same-depth pairs, so the six identical depth-0
+   * points contribute none among themselves and the outlier owns 7 of the 13
+   * surviving pairs: the median slope follows it to 156s per drink, its own
+   * residual collapses to zero, it escapes the stranded flag, AND that
+   * invented per-drink cost gets published. No model is the honest answer.
+   */
+  const fixture = () => [
+    order(0, 120),
+    order(600, 720),
+    order(1200, 1320),
+    order(1800, 1920),
+    order(2400, 2520),
+    order(3000, 3120), // six at depth 0, wait 120
+    order(3040, 3220), // depth 1, wait 180
+    ...heldGroup(4000, 5, 5000),
+    order(4200, 5100), // depth 5, wait 900 — the forgotten card
+  ]
+
+  it('publishes no model when one outlier owns the majority of pairs', () => {
+    const { orders, model } = classifyOrders(fixture())
+
+    // The fixture only bites if it really has this shape.
+    const alone = orders.filter((o) => o.tag === 'servedAlone')
+    expect(alone).toHaveLength(8)
+    expect(alone.map((o) => o.queueDepth).sort((a, b) => a - b)).toEqual([0, 0, 0, 0, 0, 0, 1, 5])
+
+    expect(model).toBeNull()
+    expect(orders.filter((o) => o.stranded)).toHaveLength(0)
+  })
+
+  it('summarize still reports the day, with the misleading line withheld', () => {
+    const summary = summarize(fixture())!
+    expect(summary.measured).toBe(13)
+    expect(summary.servedTogether.count).toBe(5)
+    expect(summary.p90Seconds).toBe(975) // the day is still reported in full
+    expect(summary.model).toBeNull()
+  })
+
+  it('leaves a well-supported fit alone: 12 inliers outvote the outlier', () => {
+    const points = [
+      ...Array.from({ length: 4 }, () => ({ depth: 0, waitSeconds: 120 })),
+      ...Array.from({ length: 4 }, () => ({ depth: 1, waitSeconds: 180 })),
+      ...Array.from({ length: 4 }, () => ({ depth: 2, waitSeconds: 240 })),
+      { depth: 8, waitSeconds: 900 },
+    ]
+    expect(fitFloorAndLine(points)).toEqual({ floorSeconds: 120, perDrinkSeconds: 60 })
+  })
+})
