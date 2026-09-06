@@ -50,7 +50,13 @@ function toIso(value: string): string {
  * dead kitchen screen mid-rush. Converting once, here, keeps that off every other path.
  */
 function normalizeRealtimeRow(row: Order): Order {
-  return { ...row, created_at: toIso(row.created_at), updated_at: toIso(row.updated_at) }
+  return {
+    ...row,
+    created_at: toIso(row.created_at),
+    updated_at: toIso(row.updated_at),
+    started_at: row.started_at ? toIso(row.started_at) : null,
+    ready_at: row.ready_at ? toIso(row.ready_at) : null,
+  }
 }
 
 /**

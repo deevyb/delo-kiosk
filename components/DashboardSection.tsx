@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
-import { getTodayDateString } from '@/lib/dateUtils'
+import { getTodayDateString, formatEventDate } from '@/lib/dateUtils'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import WaitTimingSection from './WaitTimingSection'
 
 /**
  * DashboardSection - Stats overview and CSV export
@@ -41,9 +42,8 @@ export default function DashboardSection() {
 
   // Format a YYYY-MM-DD date as "Feb 14" (adds year if not current year)
   const formatDateLabel = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
-    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const year = Number(dateStr.split('-')[0])
+    const label = formatEventDate(dateStr)
     const currentYear = new Date().getFullYear()
     return year !== currentYear ? `${label}, ${year}` : label
   }
@@ -292,6 +292,12 @@ export default function DashboardSection() {
             <PopularDrinksList drinks={stats.popularDrinks} />
             <ModifierPreferences breakdown={stats.modifierBreakdown} />
           </div>
+
+          {/* Wait timing (owner ruling, Sep 6: sits below trends, above export) */}
+          <WaitTimingSection
+            timing={stats.timing}
+            dateLabel={isViewingToday ? 'today' : `on ${formatDateLabel(selectedDate)}`}
+          />
         </motion.div>
       ) : null}
 
@@ -488,6 +494,7 @@ function StatsLoadingSkeleton() {
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
       </div>
+      <div className="card-admin h-96" />
     </div>
   )
 }

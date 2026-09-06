@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
+import type { TimingSummary } from './orderTiming'
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -51,6 +53,10 @@ export interface Order {
   claimed_by: string | null
   created_at: string
   updated_at: string
+  /** Set by DB trigger on first claim (multi-barista only); cleared on return to queue. */
+  started_at: string | null
+  /** Set by DB trigger when marked ready; cleared on return to queue. Source of truth for wait timing. */
+  ready_at: string | null
 }
 
 // Dashboard stats types
@@ -73,9 +79,14 @@ export interface ModifierOption {
   percentage: number
 }
 
+export interface TimingStats extends TimingSummary {
+  previousEvent: { date: string; p90Seconds: number } | null
+}
+
 export interface DashboardStats {
   today: OrderCounts
   allTime: OrderCounts
   popularDrinks: DrinkCount[]
   modifierBreakdown: Record<string, ModifierOption[]>
+  timing: TimingStats | null
 }

@@ -159,6 +159,11 @@ html {
   @apply bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm;
 }
 
+/* Shared admin card shell — white rounded panel used across dashboard/admin cards */
+.card-admin {
+  @apply bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10;
+}
+
 /* Checkbox styling */
 .checkbox-form {
   @apply w-[18px] h-[18px] rounded border-2 border-delo-navy/20;
