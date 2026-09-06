@@ -109,6 +109,19 @@ function utcInstantForLocalMidnight(dateStr: string, timeZone: string): Date {
 }
 
 /**
+ * Format a 'YYYY-MM-DD' event date as "Mar 15" — no year, no time-of-day.
+ * Shared by the dashboard's date-picker label and the wait-timing comparison
+ * copy, which each need the bare month/day form.
+ */
+export function formatEventDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+/**
  * Format a timestamp as "Mar 15" for same-year, "Mar 15, 2025" for different year.
  */
 export function formatShortDate(timestamp: string): string {

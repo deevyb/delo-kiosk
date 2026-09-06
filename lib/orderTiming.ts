@@ -64,23 +64,6 @@ export function percentile(values: number[], p: number): number | null {
   return sorted[rank - 1]
 }
 
-/**
- * How many orders were placed and not yet ready at `instantIso`.
- * Only orders with a known occupancy interval count: canceled and still-open
- * orders are excluded — we can't know when (or whether) they left the queue,
- * they are few, and the error is small (spec, Build §2).
- */
-export function queueDepthAt(orders: TimedOrderInput[], instantIso: string): number {
-  const instant = Date.parse(instantIso)
-  return orders.filter(
-    (o) =>
-      o.status === 'ready' &&
-      o.ready_at !== null &&
-      Date.parse(o.created_at) <= instant &&
-      Date.parse(o.ready_at) > instant
-  ).length
-}
-
 export type WaitTag = 'servedAlone' | 'servedTogether' | 'sweep'
 
 export interface ClassifiedOrder {
@@ -227,8 +210,8 @@ export function classifyOrders(orders: TimedOrderInput[]): ClassificationResult 
     }
   }
 
-  // Depth at placement: measurable orders only — same exclusion rule as
-  // queueDepthAt, and O(n²) is fine at ~150 orders per event. Runs after
+  // Depth at placement: measurable orders only, and groupmates excluded from
+  // each other's count (below). O(n²) is fine at ~150 orders per event. Runs after
   // grouping because a groupmate is not "the line": five friends alone in an
   // empty cafe would otherwise register depths 0..4 off each other, and
   // groupCost's whole quiet/busy axis would read group size as congestion.

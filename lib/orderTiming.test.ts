@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   classifyOrders,
-  queueDepthAt,
   percentile,
   fitFloorAndLine,
   MIN_MODEL_POINTS,
@@ -44,23 +43,6 @@ describe('percentile', () => {
   it('single value is every percentile', () => {
     expect(percentile([42], 50)).toBe(42)
     expect(percentile([42], 90)).toBe(42)
-  })
-})
-
-describe('queueDepthAt', () => {
-  it('counts orders placed and not yet ready at the instant', () => {
-    const orders = [order(0, 300), order(60, 400), order(500, 700)]
-    expect(queueDepthAt(orders, at(100))).toBe(2) // first two active
-    expect(queueDepthAt(orders, at(350))).toBe(1) // first done, second active
-    expect(queueDepthAt(orders, at(450))).toBe(0) // gap
-  })
-  it('excludes canceled and never-readied orders (unknown occupancy interval)', () => {
-    const orders = [
-      order(0, 300, { status: 'canceled' }),
-      order(0, null), // still open
-      order(0, 300),
-    ]
-    expect(queueDepthAt(orders, at(100))).toBe(1)
   })
 })
 

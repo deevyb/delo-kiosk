@@ -1,7 +1,8 @@
 'use client'
 
 import { TimingStats } from '@/lib/supabase'
-import { formatDuration } from '@/lib/dateUtils'
+import { formatDuration, formatEventDate } from '@/lib/dateUtils'
+import { MIN_TIMED_ORDERS, BUCKET_FAST_SECONDS, BUCKET_SLOW_SECONDS } from '@/lib/orderTiming'
 
 /**
  * Wait analytics for one event day. Three cards: the wait (p90 hero + buckets +
@@ -15,6 +16,15 @@ import { formatDuration } from '@/lib/dateUtils'
  * when the owner picks a different date, which keeps that change from snapping.
  */
 
+// Presentation-only significance thresholds (kept here, not lib/orderTiming.ts —
+// these are display decisions, not part of the timing math itself).
+/** Delta chip next to the headline p90 renders only once the change is at least this large. */
+const MIN_DELTA_CHIP_SECONDS = 15
+/** The "without them" counterfactual is only worth printing once it moves the headline this much. */
+const MIN_COUNTERFACTUAL_GAP_SECONDS = 60
+/** Below this many seconds of delta, a drink's comparison chip reads "about average" instead of a number. */
+const NEGLIGIBLE_DRINK_DELTA_SECONDS = 10
+
 interface WaitTimingSectionProps {
   timing: TimingStats | null
   dateLabel: string
@@ -23,13 +33,13 @@ interface WaitTimingSectionProps {
 export default function WaitTimingSection({ timing, dateLabel }: WaitTimingSectionProps) {
   if (!timing) {
     return (
-      <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
+      <div className="card-admin">
         <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-2 text-balance">
           Order Wait Time
         </h3>
         <p className="text-description text-sm text-pretty">
-          Not enough timed orders {dateLabel} to measure waits. Numbers appear once ten or more
-          drinks have been marked ready.
+          Not enough timed orders {dateLabel} to measure waits. Numbers appear once{' '}
+          {MIN_TIMED_ORDERS} or more drinks have been marked ready.
         </p>
       </div>
     )
@@ -61,32 +71,32 @@ function confidenceCopy(timing: TimingStats): string {
   if (counterfactual === null) {
     return `${suspectCount} orders look marked-ready-late. Too few cleanly timed orders to say what the day would have looked like without them.`
   }
-  if (timing.p90Seconds - counterfactual >= 60) {
+  if (timing.p90Seconds - counterfactual >= MIN_COUNTERFACTUAL_GAP_SECONDS) {
     return `${suspectCount} orders look marked-ready-late. Without them: ${formatDuration(counterfactual)}.`
   }
   return `${suspectCount} ${suspectCount === 1 ? 'order looks' : 'orders look'} marked-ready-late. Too few to matter.`
 }
 
-function formatEventDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
 function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
   const prev = timing.previousEvent
   const deltaSeconds = prev ? timing.p90Seconds - prev.p90Seconds : null
-  const showDelta = deltaSeconds !== null && Math.abs(deltaSeconds) >= 15
+  const showDelta = deltaSeconds !== null && Math.abs(deltaSeconds) >= MIN_DELTA_CHIP_SECONDS
 
   // `measured` is at least MIN_TIMED_ORDERS wherever `timing` exists; the floor
   // is here so a malformed payload can never paint NaN across the whole bar.
   const total = Math.max(1, timing.measured)
+  // Assumes both bucket edges land on whole minutes (true today: 180s/360s) —
+  // a non-round edge would need its own formatter, not integer division.
+  const fastMinutes = BUCKET_FAST_SECONDS / 60
+  const slowMinutes = BUCKET_SLOW_SECONDS / 60
   const segments = [
-    { label: 'Under 3m', count: timing.buckets.fast, color: 'bg-delo-chart-fast' },
-    { label: '3–6m', count: timing.buckets.medium, color: 'bg-delo-chart-mid' },
-    { label: 'Over 6m', count: timing.buckets.slow, color: 'bg-delo-chart-slow' },
+    { label: `Under ${fastMinutes}m`, count: timing.buckets.fast, color: 'bg-delo-chart-fast' },
+    {
+      label: `${fastMinutes}–${slowMinutes}m`,
+      count: timing.buckets.medium,
+      color: 'bg-delo-chart-mid',
+    },
+    { label: `Over ${slowMinutes}m`, count: timing.buckets.slow, color: 'bg-delo-chart-slow' },
   ].map((segment) => ({
     ...segment,
     share: (segment.count / total) * 100,
@@ -99,7 +109,7 @@ function WaitHeadlineCard({ timing }: { timing: TimingStats }) {
     .join(', ')}`
 
   return (
-    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
+    <div className="card-admin">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-1 text-balance">
         Order Wait Time
       </h3>
@@ -189,7 +199,7 @@ function StatRow({
 function WaitBreakdownCard({ timing }: { timing: TimingStats }) {
   const { model, groupCost, servedTogether } = timing
   return (
-    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
+    <div className="card-admin">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-3 text-balance">
         Wait Time Breakdown
       </h3>
@@ -229,7 +239,7 @@ function WaitBreakdownCard({ timing }: { timing: TimingStats }) {
 function ByDrinkCard({ timing }: { timing: TimingStats }) {
   const hasData = timing.perDrink.length > 0
   return (
-    <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10">
+    <div className="card-admin">
       <h3 className="font-bricolage font-semibold text-sm uppercase tracking-wider text-delo-navy/60 mb-3 text-balance">
         By Drink vs. the Average
       </h3>
@@ -264,7 +274,7 @@ function ByDrinkCard({ timing }: { timing: TimingStats }) {
 }
 
 function DeltaChip({ deltaSeconds }: { deltaSeconds: number }) {
-  const negligible = Math.abs(deltaSeconds) < 10
+  const negligible = Math.abs(deltaSeconds) < NEGLIGIBLE_DRINK_DELTA_SECONDS
   return (
     <span
       className={`font-manrope font-semibold text-sm tabular-nums whitespace-nowrap ${

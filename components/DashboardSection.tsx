@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Order, DashboardStats, OrderCounts, DrinkCount, ModifierOption } from '@/lib/supabase'
-import { getTodayDateString } from '@/lib/dateUtils'
+import { getTodayDateString, formatEventDate } from '@/lib/dateUtils'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import WaitTimingSection from './WaitTimingSection'
 
@@ -42,9 +42,8 @@ export default function DashboardSection() {
 
   // Format a YYYY-MM-DD date as "Feb 14" (adds year if not current year)
   const formatDateLabel = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
-    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const year = Number(dateStr.split('-')[0])
+    const label = formatEventDate(dateStr)
     const currentYear = new Date().getFullYear()
     return year !== currentYear ? `${label}, ${year}` : label
   }
@@ -491,7 +490,7 @@ function StatsLoadingSkeleton() {
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-32" />
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-32" />
       </div>
-      <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-40" />
+      <div className="card-admin h-40" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />
         <div className="bg-white rounded-xl p-4 md:p-6 border border-delo-navy/10 h-48" />

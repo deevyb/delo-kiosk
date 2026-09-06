@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { utcRangeForLocalDay, formatDuration, formatPrepTime } from './dateUtils'
+import { utcRangeForLocalDay, formatDuration, formatPrepTime, formatEventDate } from './dateUtils'
 
 describe('utcRangeForLocalDay', () => {
   it('LA summer day (PDT, UTC-7)', () => {
@@ -39,5 +39,14 @@ describe('formatDuration', () => {
   it('formatPrepTime still behaves identically after delegating', () => {
     expect(formatPrepTime('2026-08-23T17:00:00Z', '2026-08-23T17:02:30Z')).toBe('2m 30s')
     expect(formatPrepTime('2026-08-23T17:00:00Z', '2026-08-23T16:59:00Z')).toBe('< 1s')
+  })
+})
+
+describe('formatEventDate', () => {
+  it('formats a normal date without a year', () => {
+    expect(formatEventDate('2026-08-23')).toBe('Aug 23')
+  })
+  it('formats a January date correctly (catches month-index-off-by-one bugs)', () => {
+    expect(formatEventDate('2026-01-05')).toBe('Jan 5')
   })
 })

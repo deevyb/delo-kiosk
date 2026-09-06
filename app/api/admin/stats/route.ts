@@ -6,6 +6,36 @@ import { utcRangeForLocalDay } from '@/lib/dateUtils'
 // Disable caching for fresh stats on every request
 export const dynamic = 'force-dynamic'
 
+// Bounded queries only. The old select-everything shape silently truncated at
+// PostgREST's 1,000-row default — timing math on a quietly truncated dataset
+// produces confidently wrong numbers (spec, Build §3).
+const ORDER_COLUMNS = 'id, item, modifiers, status, created_at, ready_at, claimed_by'
+const ROW_CAP = 1000
+
+/**
+ * Fetch one local calendar day's orders (by UTC bounds), capped at ROW_CAP,
+ * warning if the cap was hit — shared by the target-date fetch and the
+ * previous-event lookback loop, which otherwise duplicated this exactly.
+ */
+async function fetchDayOrders(startIso: string, endIso: string, dayLabel: string) {
+  const res = await supabase
+    .from('orders')
+    .select(ORDER_COLUMNS)
+    .gte('created_at', startIso)
+    .lt('created_at', endIso)
+    .order('created_at', { ascending: true })
+    .limit(ROW_CAP)
+  if ((res.data?.length ?? 0) === ROW_CAP) {
+    // Not an error the owner can act on, but the timing math below would be
+    // computed on part of a day while looking like the whole of it.
+    console.warn(
+      'stats: day hit the 1000-row cap; timing may be computed on a truncated day',
+      dayLabel
+    )
+  }
+  return res
+}
+
 /**
  * GET /api/admin/stats
  * Returns dashboard statistics:
@@ -24,23 +54,12 @@ export async function GET(request: Request) {
     const isViewingToday = targetDate === today
     const { startIso, endIso } = utcRangeForLocalDay(targetDate, timezone)
 
-    // Bounded queries only. The old select-everything shape silently truncated
-    // at PostgREST's 1,000-row default — timing math on a quietly truncated
-    // dataset produces confidently wrong numbers (spec, Build §3).
-    const ORDER_COLUMNS = 'id, item, modifiers, status, created_at, ready_at, claimed_by'
     const STATUSES = ['placed', 'in_progress', 'ready', 'canceled'] as const
-    const ROW_CAP = 1000
     /** How many prior days to walk back looking for a real previous event. */
     const PREVIOUS_EVENT_LOOKBACK_DAYS = 3
 
     const [targetRes, trendRes, ...countResults] = await Promise.all([
-      supabase
-        .from('orders')
-        .select(ORDER_COLUMNS)
-        .gte('created_at', startIso)
-        .lt('created_at', endIso)
-        .order('created_at', { ascending: true })
-        .limit(ROW_CAP),
+      fetchDayOrders(startIso, endIso, targetDate),
       // All-time trends when viewing today (existing quirk, deliberately kept —
       // backlog #9's business). Newest-first so an explicit cap keeps recent
       // events rather than the oldest.
@@ -63,14 +82,6 @@ export async function GET(request: Request) {
     if (targetRes.error) throw targetRes.error
     if (trendRes.error) throw trendRes.error
     const targetDateOrders = targetRes.data || []
-    if (targetDateOrders.length === ROW_CAP) {
-      // Not an error the owner can act on, but the timing math below would be
-      // computed on part of a day while looking like the whole of it.
-      console.warn(
-        'stats: day hit the 1000-row cap; timing may be computed on a truncated day',
-        targetDate
-      )
-    }
 
     const countByStatus = (orderList: { status: string }[]) => {
       return orderList.reduce(
@@ -166,21 +177,9 @@ export async function GET(request: Request) {
 
         const prevDate = dateFmt.format(new Date(probeRow.created_at))
         const prevRange = utcRangeForLocalDay(prevDate, timezone)
-        const prevRes = await supabase
-          .from('orders')
-          .select(ORDER_COLUMNS)
-          .gte('created_at', prevRange.startIso)
-          .lt('created_at', prevRange.endIso)
-          .order('created_at', { ascending: true })
-          .limit(ROW_CAP)
+        const prevRes = await fetchDayOrders(prevRange.startIso, prevRange.endIso, prevDate)
         if (prevRes.error) break
         const prevRows = prevRes.data || []
-        if (prevRows.length === ROW_CAP) {
-          console.warn(
-            'stats: day hit the 1000-row cap; timing may be computed on a truncated day',
-            prevDate
-          )
-        }
 
         const prevSummary = summarize(prevRows as TimedOrderInput[])
         if (prevSummary) previousEvent = { date: prevDate, p90Seconds: prevSummary.p90Seconds }
