@@ -262,7 +262,10 @@ export default function OrderClient({ menuItems, modifiers }: OrderClientProps) 
         />
       )}
 
-      {/* Confirmation screen - shows after successful order submission */}
+      {/* Confirmation screen - shows after successful order submission.
+          pointer-events-auto is load-bearing: the closing vaul sheet sets
+          body{pointer-events:none} for ~500ms after submit, and the exit's
+          pointerEvents:'none' lets taps through during the fade-out. */}
       <AnimatePresence>
         {screen === 'confirmed' && submittedOrder && (
           <motion.div

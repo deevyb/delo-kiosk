@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { MenuItem } from '@/lib/supabase'
+import { smoothEase } from '@/lib/animation'
 
 interface DrinkCardProps {
   drink: MenuItem
@@ -17,11 +18,8 @@ interface DrinkCardProps {
  * Feel free to tweak them - here's what each does:
  */
 
-// Easing curve for entrance animation
-// This one creates a smooth deceleration - fast start, gentle stop
-export const smoothEase = [0.65, 0.05, 0, 1] as const
-
 // Entrance animation - how cards appear when page loads
+// (easing curve is the shared smoothEase from lib/animation.ts)
 const entranceVariants = {
   hidden: {
     opacity: 0,

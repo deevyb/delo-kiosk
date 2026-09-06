@@ -211,3 +211,4 @@ amount out loud while their drink stays on screen in front of them.
 | Sticker feels dead everywhere       | Rewrite it in NFC Tools. If writing fails too, the sticker's damaged — use a spare                                                             |
 | Venmo opens but nothing's filled in | Fine to continue: tell them the price out loud. Note it and re-test after the event                                                            |
 | Anything at all, mid-rush           | Point at the QR code and say "scan this" — it's the same link, and cameras never fail                                                          |
+| The Tap to Pay button is missing    | One of the two settings in Vercel is off: handle with no `@` and no spaces, price as a plain number like `6.00` (no `$`). Fix, then redeploy   |

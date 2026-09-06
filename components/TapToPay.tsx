@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { Order } from '@/lib/supabase'
 import { getVenmoConfig, buildVenmoUrl } from '@/lib/venmo'
-import { smoothEase } from './DrinkCard'
+import { smoothEase } from '@/lib/animation'
 
 interface TapToPayProps {
   order: Order
@@ -37,8 +37,11 @@ export default function TapToPay({ order, onDismiss }: TapToPayProps) {
     .filter(Boolean)
     .join(', ')
 
+  // overflow-y-auto: on short viewports (landscape phone) the stacked content
+  // exceeds the screen — without it the bottom tap cue is clipped off with no
+  // way to reach it
   return (
-    <div className="w-full h-full flex flex-col items-center px-6 pt-3 pb-8 text-center">
+    <div className="w-full h-full flex flex-col items-center px-6 pt-3 pb-8 text-center overflow-y-auto">
       {/* Subtle dismiss — for the order-taker, tucked away from customer thumbs */}
       <div className="w-full flex justify-end">
         <motion.button

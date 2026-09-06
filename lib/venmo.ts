@@ -13,11 +13,16 @@ export interface VenmoConfig {
  * never process.env[name] or destructuring.
  */
 export function getVenmoConfig(): VenmoConfig | null {
-  const handle = process.env.NEXT_PUBLIC_VENMO_HANDLE?.trim()
+  const handle = process.env.NEXT_PUBLIC_VENMO_HANDLE?.trim().replace(/^@/, '')
   const price = process.env.NEXT_PUBLIC_VENMO_PRICE
   const amount = Number(price)
-  if (!handle || !price || !Number.isFinite(amount) || amount <= 0) return null
-  return { handle: handle.replace(/^@/, ''), price: amount.toFixed(2) }
+  // Venmo handles are letters/digits/underscore/hyphen/dot. Anything else
+  // (an inner space, a pasted URL, a '#') would bake a broken link into
+  // the QR, so a malformed handle turns the feature off like a missing one.
+  if (!handle || !/^[\w.-]+$/.test(handle) || !price || !Number.isFinite(amount) || amount <= 0) {
+    return null
+  }
+  return { handle, price: amount.toFixed(2) }
 }
 
 /**
